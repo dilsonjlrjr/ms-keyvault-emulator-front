@@ -1,0 +1,46 @@
+services:
+  kvemu:
+    build:
+      context: ../backend
+      dockerfile: deploy/Dockerfile
+    container_name: kvemu
+    ports:
+      - '13000:13000'
+    environment:
+      KV_ADDR: '0.0.0.0:13000'
+      KV_VAULT_HOST: '${KV_VAULT_HOST:-kvemu:13000}'
+      KV_TENANT_ID: '${KV_TENANT_ID:-a0c2a3f5-e1b3-4d6a-9c41-2cdd1f2c7e0f}'
+      KV_TLS_AUTO: 'true'
+      KV_AUTH_STRICT: 'false'
+      KV_MASTER_KEY: '${KV_MASTER_KEY:-}'
+      KV_DATA: '/data/kv.db'
+      KV_CERT_DIR: '/certs'
+      KV_CA_OUT: '/certs/ca.pem'
+    volumes:
+      - kvemu-data:/data
+      - kvemu-certs:/certs
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'sh', '-c', 'wget -qO- --no-check-certificate https://localhost:13000/healthz || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  kv-interface:
+    build: .
+    container_name: kv-interface
+    ports:
+      - '3000:3000'
+    environment:
+      KEYVAULT_EMULATOR_URL: '${KEYVAULT_EMULATOR_URL:-https://kvemu:13000}'
+      KEYVAULT_TENANT_ID: '${KV_TENANT_ID:-a0c2a3f5-e1b3-4d6a-9c41-2cdd1f2c7e0f}'
+      KEYVAULT_TITLE: '${KEYVAULT_TITLE:-One Keyvault}'
+      ORIGIN: 'http://localhost:3000'
+    depends_on:
+      kvemu:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  kvemu-data:
+  kvemu-certs:

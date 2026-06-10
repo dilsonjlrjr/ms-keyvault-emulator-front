@@ -1,0 +1,9 @@
+node_modules/
+build/
+dist/
+certs/
+.DS_Store
+.env
+.env.*
+CONTEXT.md
+.svelte-kit/
