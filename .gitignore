@@ -4,6 +4,5 @@ dist/
 certs/
 .DS_Store
 .env
-.env.*
-CONTEXT.md
+.env.local
 .svelte-kit/
