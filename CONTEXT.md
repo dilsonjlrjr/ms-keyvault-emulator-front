@@ -13,31 +13,25 @@
 ```
 frontend/
 ├── src/
-│   ├── app.d.ts                      # Type declarations
+│   ├── app.d.ts                      # Type declarations (Locals.selectedVault)
 │   ├── app.html                      # Root HTML shell
 │   ├── app.css                       # Global CSS + Tailwind + Azure Portal theme vars
+│   ├── hooks.server.ts               # Cookie selected_vault → locals (v1.1)
 │   ├── lib/
 │   │   ├── index.ts                  # Barrel (vazio)
 │   │   ├── assets/favicon.svg        # Favicon
 │   │   └── server/
-│   │       └── keyvault.ts           # ★ Core API client (OAuth2 + data-plane)
+│   │       └── keyvault.ts           # KeyVaultClient class + management API (v1.1)
 │   └── routes/
-│       ├── +layout.svelte            # Shell: header + sidebar nav
-│       ├── +layout.server.ts         # Load KEYVAULT_TITLE env var
+│       ├── +layout.svelte            # Shell: header + vault selector + sidebar nav (v1.1)
+│       ├── +layout.server.ts         # Load vaults list + selectedVault (v1.1)
 │       ├── +error.svelte             # Error page
 │       ├── +page.server.ts           # Root → redirect /secrets
-│       ├── secrets/
-│       │   ├── +page.server.ts       # List + create/delete actions
-│       │   ├── +page.svelte          # Secrets table + create form
-│       │   └── [name]/
-│       │       ├── +page.server.ts   # Single secret detail
-│       │       └── +page.svelte      # Secret detail (show/hide value)
-│       ├── keys/
-│       │   ├── +page.server.ts       # List keys
-│       │   └── +page.svelte          # Keys table (read-only)
-│       └── certificates/
-│           ├── +page.server.ts       # List certificates
-│           └── +page.svelte          # Certificates table (read-only)
+│       ├── api/select-vault/         # POST — set cookie + redirect (v1.1)
+│       ├── secrets/                  # List + create/delete, [name] detail
+│       ├── keys/                     # List (read-only)
+│       ├── certificates/             # List (read-only)
+│       └── vaults/                   # CRUD + export + import (v1.1)
 ├── static/robots.txt
 ├── Dockerfile                        # Multi-stage (node:22-alpine)
 ├── docker-compose.yml                # kvemu + kv-interface
@@ -78,6 +72,8 @@ O frontend autentica contra o AAD fake do kvemu via OAuth2 `client_credentials`:
 | `KEYVAULT_EMULATOR_URL` | URL base do kvemu | `https://localhost:13000` |
 | `KEYVAULT_TENANT_ID` | Tenant ID p/ OAuth2 | `a0c2a3f5-e1b3-4d6a-9c41-2cdd1f2c7e0f` |
 | `KEYVAULT_TITLE` | Título no header | `One Keyvault` |
+| `KEYVAULT_BASE_DOMAIN` | Domínio base para subdomínios (v1.1) | `kvemu.local` |
+| `KEYVAULT_DEFAULT_VAULT` | Nome do vault padrão (v1.1) | `vault` |
 | `PORT` | Porta do servidor SvelteKit | `3000` |
 | `ORIGIN` | Origin header (CSRF) | `http://localhost:3000` |
 
@@ -152,12 +148,18 @@ O nome do item é extraído do penúltimo segmento do `id` (ex: `https://host/se
 |------|-----------|
 | `/` | Redirect 302 → `/secrets` |
 | `/secrets` | Lista secrets + form de criação inline + delete inline |
-| `/secrets/[name]` | Detalhe do secret (id, valor com toggle show/hide, contentType, status) + delete |
+| `/secrets/[name]` | Detalhe do secret + delete |
 | `/keys` | Lista keys (read-only) |
 | `/certificates` | Lista certificates (read-only) |
+| `/vaults` | Gestão de vaults: criar, listar, deletar, exportar, importar (v1.1) |
+| `/vaults/import` | Upload de JSON para importar vault (v1.1) |
+| `/vaults/[name]/export` | Download do vault como JSON (v1.1) |
+| `/api/select-vault` | POST — seta cookie `selected_vault` e redireciona (v1.1) |
 
 O layout (`+layout.svelte`) renderiza:
 - Header azul escuro com `Key Vault Emulator — {KEYVAULT_TITLE}` + badge "local"
+- **Vault selector dropdown** — seleciona vault ativo, persiste em cookie `selected_vault` (v1.1)
+- Link "Manage Vaults" → `/vaults` (v1.1)
 - Sidebar com links: Secrets, Keys, Certificates (highlight no ativo via `$app/state`)
 
 ---
@@ -208,3 +210,55 @@ O frontend é um cliente data-plane puro do kvemu:
 - Não requer `/token` simplificado — usa os endpoints AAD fake padrão
 - TLS autoassinado aceito (dev/local apenas)
 - Compatível com qualquer instância kvemu (basta configurar URL + tenant ID)
+
+---
+
+## Multi-Vault (v1.1)
+
+O frontend suporta múltiplos vaults via **vault selector** no header e **KeyVaultClient** class.
+
+### Vault Selector
+
+O layout carrega a lista de vaults do emulador e exibe um dropdown no header. A seleção é persistida via cookie `selected_vault`.
+
+### API Client (`keyvault.ts`)
+
+`KeyVaultClient` substitui o antigo singleton `keyvault`. Cada instância é vinculada a um vault name e constrói a URL correta:
+
+```typescript
+const client = getVaultClient("prod"); // https://prod.kvemu.local:13000
+const secrets = await client.listSecrets();
+```
+
+Para o vault default, usar `getVaultClient()` sem argumentos (usa `KEYVAULT_DEFAULT_VAULT`).
+
+### Token compartilhado
+
+O token OAuth2 é cacheado globalmente e compartilhado entre todos os vaults (mesmo tenant, mesma chave JWT). O `audience` no JWT é por vault, mas o frontend obtém token contra o host base.
+
+### Management API (sem AAD auth)
+
+| Método | Path | Uso |
+|--------|------|-----|
+| GET | `/vaults` | `listVaults()` |
+| POST | `/vaults` | `createVault(name, displayName)` |
+| GET | `/vaults/{name}` | `getVault(name)` |
+| DELETE | `/vaults/{name}` | `deleteVault(name)` |
+| GET | `/vaults/{name}/export` | `exportVault(name)` |
+| POST | `/vaults/import` | `importVault(data)` |
+
+### Hooks
+
+`hooks.server.ts` lê o cookie `selected_vault` e injeta em `event.locals.selectedVault`. As páginas o usam para instanciar o `KeyVaultClient` correto.
+
+### Novos arquivos
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/hooks.server.ts` | Hook que gerencia cookie `selected_vault` |
+| `src/routes/vaults/+page.server.ts` | Load + ações create/delete |
+| `src/routes/vaults/+page.svelte` | UI de gestão de vaults |
+| `src/routes/vaults/[name]/export/+server.ts` | Proxy de download do export |
+| `src/routes/vaults/import/+page.server.ts` | Ação de import |
+| `src/routes/vaults/import/+page.svelte` | UI de upload + preview |
+| `src/routes/api/select-vault/+server.ts` | Endpoint para trocar vault selecionado |

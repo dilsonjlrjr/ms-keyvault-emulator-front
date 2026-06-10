@@ -1,12 +1,13 @@
 import { error } from '@sveltejs/kit';
-import { keyvault } from '$lib/server/keyvault';
+import { getVaultClient } from '$lib/server/keyvault';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
 	try {
-		const certificates = await keyvault.listCertificates();
+		const client = getVaultClient(locals.selectedVault);
+		const certificates = await client.listCertificates();
 		return { certificates };
 	} catch (err) {
-		error(503, `Não foi possível conectar ao emulador do Key Vault: ${(err as Error).message}`);
+		error(503, `Unable to connect to vault emulator: ${(err as Error).message}`);
 	}
 };

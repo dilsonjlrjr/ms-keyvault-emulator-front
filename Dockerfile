@@ -21,6 +21,12 @@ COPY --from=build /app/node_modules ./node_modules
 # Sobrescreva via `docker run -e KEYVAULT_EMULATOR_URL=...` ou docker-compose.
 ENV KEYVAULT_EMULATOR_URL=https://host.docker.internal:13000
 
+# Domínio base para hostnames dos vaults (multi-vault v1.1)
+ENV KEYVAULT_BASE_DOMAIN=kvemu.local
+
+# Nome do vault padrão (multi-vault v1.1)
+ENV KEYVAULT_DEFAULT_VAULT=vault
+
 # Tenant ID usado no fluxo OAuth2 client_credentials contra o AAD fake do kvemu.
 ENV KEYVAULT_TENANT_ID=a0c2a3f5-e1b3-4d6a-9c41-2cdd1f2c7e0f
 
