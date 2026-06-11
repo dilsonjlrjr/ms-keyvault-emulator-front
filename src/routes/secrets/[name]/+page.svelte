@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { getContext } from 'svelte';
+	import { page } from '$app/state';
 	import type { PageData } from './$types';
 	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
-	const lang = getContext<string>('lang');
-	const _ = (key: string) => t(key, lang);
+	const _ = (key: string) => t(key, page.data.lang as string || 'en');
 
 	let reveal = $state(false);
 	let copied = $state(false);

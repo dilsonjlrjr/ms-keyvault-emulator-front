@@ -3,16 +3,13 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
 	import { invalidateAll } from '$app/navigation';
-	import { setContext } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 	import { t, type Lang } from '$lib/i18n';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
-	setContext('lang', data.lang);
-
-	const _ = (key: string) => t(key, data.lang);
+	const _ = (key: string) => t(key, page.data.lang as string || 'en');
 
 	const headerTitle = $derived(`${_('bar.title')} — ${data.vaultTitle}`);
 

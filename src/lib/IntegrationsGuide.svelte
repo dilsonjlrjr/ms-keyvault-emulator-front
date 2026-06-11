@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { getContext } from 'svelte';
+  import { page } from '$app/state';
   import { t, type Lang } from '$lib/i18n';
-  const lang = getContext<string>('lang') || 'en';
-  const _ = (key: string) => t(key, lang);
+  const _ = (key: string) => t(key, page.data.lang as string || 'en');
 
   let activeTab = $state<'spring' | 'go'>('spring');
 
