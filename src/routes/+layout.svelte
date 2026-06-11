@@ -2,7 +2,6 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 	import { t, type Lang } from '$lib/i18n';
@@ -32,18 +31,6 @@
 		{ code: 'pt', label: 'PT', flag: '🇧🇷' },
 		{ code: 'es', label: 'ES', flag: '🇪🇸' }
 	];
-
-	async function onVaultChange(e: Event) {
-		const vault = (e.target as HTMLSelectElement).value;
-		if (vault === data.selectedVault) return;
-		await fetch('/api/select-vault', {
-			method: 'POST',
-			redirect: 'manual',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: new URLSearchParams({ vault }).toString()
-		});
-		await goto(page.url.pathname + page.url.search, { invalidateAll: true, keepFocus: true });
-	}
 
 	async function changeLang(l: Lang) {
 		document.cookie = `lang=${l}; path=/; max-age=31536000; SameSite=Lax`;
@@ -119,19 +106,22 @@
 
 			<div class="ml-auto flex items-center gap-2">
 				{#if data.vaults.length > 0}
-					<select
-						name="vault"
-						value={data.selectedVault}
-						class="input py-1 pr-6 text-xs"
-						style="width: auto;"
-						onchange={onVaultChange}
-					>
-						{#each data.vaults as vault (vault.name)}
-							<option value={vault.name}>
-								{vault.displayName || vault.name}
-							</option>
-						{/each}
-					</select>
+					<form method="POST" action="/api/select-vault" class="flex items-center">
+						<input type="hidden" name="from" value={page.url.pathname + page.url.search} />
+						<select
+							name="vault"
+							value={data.selectedVault}
+							class="input py-1 pr-6 text-xs"
+							style="width: auto;"
+							onchange={(e) => { (e.currentTarget as HTMLSelectElement).form?.requestSubmit(); }}
+						>
+							{#each data.vaults as vault (vault.name)}
+								<option value={vault.name}>
+									{vault.displayName || vault.name}
+								</option>
+							{/each}
+						</select>
+					</form>
 				{/if}
 
 				<div class="flex items-center rounded-lg border p-0.5" style="border-color: var(--border-default);">

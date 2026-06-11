@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ request, cookies }) => {
+export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	const data = await request.formData();
 	const vault = data.get('vault')?.toString() || '';
 
@@ -12,5 +12,6 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		sameSite: 'lax'
 	});
 
-	throw redirect(303, '/secrets');
+	const from = data.get('from')?.toString() || '/secrets';
+	throw redirect(303, from);
 };
