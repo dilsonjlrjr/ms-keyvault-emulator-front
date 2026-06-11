@@ -34,7 +34,7 @@ const dict: Record<string, Record<Lang, string>> = {
 	'secrets.delete_title': { en: 'Delete Secret', pt: 'Excluir Segredo', es: 'Eliminar Secreto' },
 	'secrets.delete_confirm': { en: 'Are you sure you want to delete', pt: 'Tem certeza que deseja excluir', es: '¿Está seguro de que desea eliminar' },
 	'secrets.delete': { en: 'Delete', pt: 'Excluir', es: 'Eliminar' },
-	'secrets.detail.back': { en: '← Back to Secrets', pt: '← Voltar para Segredos', es: '← Volver a Secretos' },
+	'secrets.detail.back': { en: 'Back to Secrets', pt: 'Voltar para Segredos', es: 'Volver a Secretos' },
 	'secrets.detail.content_type': { en: 'Content Type', pt: 'Tipo de Conteúdo', es: 'Tipo de Contenido' },
 	'secrets.detail.created': { en: 'Created', pt: 'Criado', es: 'Creado' },
 	'secrets.detail.expires': { en: 'Expires', pt: 'Expira', es: 'Expira' },
@@ -92,7 +92,7 @@ const dict: Record<string, Record<Lang, string>> = {
 	'vaults.import_subtitle': { en: 'Upload a vault export JSON file to restore secrets, keys, and certificates.', pt: 'Faça upload de um arquivo JSON de exportação para restaurar segredos, chaves e certificados.', es: 'Suba un archivo JSON de exportación para restaurar secretos, claves y certificados.' },
 	'vaults.import_json': { en: 'Import JSON', pt: 'Importar JSON', es: 'Importar JSON' },
 	'vaults.importing': { en: 'Importing...', pt: 'Importando...', es: 'Importando...' },
-	'vaults.back': { en: '← Back to Vaults', pt: '← Voltar para Vaults', es: '← Volver a Vaults' },
+	'vaults.back': { en: 'Back to Vaults', pt: 'Voltar para Vaults', es: 'Volver a Vaults' },
 
 	// ── Integrations page ──
 	'integrations.title': { en: 'Integrations', pt: 'Integrações', es: 'Integraciones' },
