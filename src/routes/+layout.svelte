@@ -115,6 +115,7 @@
 				</svg>
 				{_('nav.manage_vaults')}
 			</a>
+			<p class="mt-2 text-[0.625rem] font-semibold uppercase tracking-wider" style="color: var(--text-muted);">v{__APP_VERSION__}</p>
 		</div>
 	</aside>
 
