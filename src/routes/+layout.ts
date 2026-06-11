@@ -1,8 +1,8 @@
 export const ssr = false;
 
 export async function load({ fetch }) {
-	const selectedVault = getCookie('selected_vault') || 'vault';
-	const lang = getCookie('lang') || 'en';
+	const selectedVault = safeGet('selected_vault') || 'vault';
+	const lang = safeGet('lang') || 'en';
 
 	let vaults: Array<{ name: string; displayName?: string; host: string }> = [];
 	try {
@@ -12,7 +12,7 @@ export async function load({ fetch }) {
 			vaults = data.value;
 		}
 	} catch {
-		// offline — vaults vazio
+		// offline
 	}
 
 	return {
@@ -23,8 +23,7 @@ export async function load({ fetch }) {
 	};
 }
 
-function getCookie(name: string): string | null {
-	if (typeof document === 'undefined') return null;
-	const match = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'));
-	return match?.[1] ?? null;
+function safeGet(key: string): string | null {
+	if (typeof localStorage !== 'undefined') return localStorage.getItem(key);
+	return null;
 }

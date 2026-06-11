@@ -23,13 +23,7 @@
 		vaultChangeError = null;
 		switchingVault = true;
 		try {
-			const body = new FormData();
-			body.set('vault', vault);
-			const response = await fetch('/api/select-vault', { method: 'POST', body });
-			if (!response.ok) {
-				vaultChangeError = _('bar.vault_change_error');
-				return;
-			}
+			localStorage.setItem('selected_vault', vault);
 			await invalidateAll();
 		} finally {
 			switchingVault = false;
@@ -59,7 +53,7 @@
 	];
 
 	async function changeLang(l: Lang) {
-		document.cookie = `lang=${l}; path=/; max-age=31536000; SameSite=Lax`;
+		localStorage.setItem('lang', l);
 		window.location.reload();
 	}
 </script>
