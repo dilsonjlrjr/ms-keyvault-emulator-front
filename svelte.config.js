@@ -1,20 +1,15 @@
 import adapter from '@sveltejs/adapter-node';
 import { execSync } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-function getSha(): string {
+function sha() {
 	try { return execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim(); }
-	catch { /* sem git — lê do arquivo */ }
-	const versionFile = resolve(__dirname, '.version');
-	if (existsSync(versionFile)) return readFileSync(versionFile, 'utf-8').trim();
-	return 'unknown';
+	catch { /* sem git no build — lê .version */ }
+	try { return readFileSync('.version', 'utf-8').trim(); }
+	catch { return 'unknown'; }
 }
 
-const sha = getSha();
+const version = sha();
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -24,11 +19,11 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		csrf: { checkOrigin: false },
-		version: { name: sha }
+		version: { name: version }
 	},
 	vite: {
 		define: {
-			__APP_VERSION__: JSON.stringify(sha)
+			__APP_VERSION__: JSON.stringify(version)
 		}
 	}
 };
