@@ -2,7 +2,7 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
-	import { invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 	import { t, type Lang } from '$lib/i18n';
@@ -42,7 +42,7 @@
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 			body: new URLSearchParams({ vault }).toString()
 		});
-		await invalidateAll();
+		await goto(page.url.pathname + page.url.search, { invalidateAll: true, keepFocus: true });
 	}
 
 	async function changeLang(l: Lang) {
