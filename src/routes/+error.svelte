@@ -1,10 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { getContext } from 'svelte';
 	import { t } from '$lib/i18n';
 
-	const lang = getContext('lang') as string;
-	const _ = (key: string) => t(key, lang);
+	const _ = (key: string) => t(key, (page.data.lang as string) || 'en');
 </script>
 
 <div class="flex min-h-[60vh] items-center justify-center p-6">

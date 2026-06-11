@@ -1,7 +1,9 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { page } from '$app/state';
+	import { page, navigating } from '$app/state';
+	import { invalidateAll } from '$app/navigation';
+	import { fade } from 'svelte/transition';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 	import { t, type Lang } from '$lib/i18n';
@@ -9,6 +11,28 @@
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
 	const _ = (key: string) => t(key, page.data.lang as string || 'en');
+
+	// Troca de vault em andamento (fetch do cookie + invalidateAll dos loads).
+	let switchingVault = $state(false);
+
+	// Mostra a barra de progresso em navegação de rota OU troca de vault.
+	const isBusy = $derived(!!navigating.to || switchingVault);
+
+	// O endpoint /api/select-vault é um +server (não um form action), então NÃO
+	// usamos use:enhance. Seta o cookie via fetch e revalida os loads no cliente —
+	// transição suave, sem reload cheio.
+	async function onVaultChange(e: Event) {
+		const vault = (e.currentTarget as HTMLSelectElement).value;
+		switchingVault = true;
+		try {
+			const body = new FormData();
+			body.set('vault', vault);
+			await fetch('/api/select-vault', { method: 'POST', body, redirect: 'manual' });
+			await invalidateAll();
+		} finally {
+			switchingVault = false;
+		}
+	}
 
 	const headerTitle = $derived(`${_('bar.title')} — ${data.vaultTitle}`);
 
@@ -106,22 +130,20 @@
 
 			<div class="ml-auto flex items-center gap-2">
 				{#if data.vaults.length > 0}
-					<form method="POST" action="/api/select-vault" class="flex items-center">
-						<input type="hidden" name="from" value={page.url.pathname + page.url.search} />
-						<select
-							name="vault"
-							value={data.selectedVault}
-							class="input py-1 pr-6 text-xs"
-							style="width: auto;"
-							onchange={(e) => { (e.currentTarget as HTMLSelectElement).form?.requestSubmit(); }}
-						>
-							{#each data.vaults as vault (vault.name)}
-								<option value={vault.name}>
-									{vault.displayName || vault.name}
-								</option>
-							{/each}
-						</select>
-					</form>
+					<select
+						name="vault"
+						value={data.selectedVault}
+						disabled={isBusy}
+						class="input py-1 pr-6 text-xs"
+						style="width: auto;"
+						onchange={onVaultChange}
+					>
+						{#each data.vaults as vault (vault.name)}
+							<option value={vault.name}>
+								{vault.displayName || vault.name}
+							</option>
+						{/each}
+					</select>
 				{/if}
 
 				<div class="flex items-center rounded-lg border p-0.5" style="border-color: var(--border-default);">
@@ -140,9 +162,43 @@
 			</div>
 		</header>
 
+		<!-- Indeterminate progress bar (navegação / troca de vault) -->
+		{#if isBusy}
+			<div class="route-progress" transition:fade={{ duration: 120 }} aria-hidden="true">
+				<div class="route-progress-bar"></div>
+			</div>
+		{/if}
+
 		<!-- Content -->
-		<main class="flex-1 overflow-y-auto p-6">
-			{@render children()}
+		<main class="relative flex-1 overflow-y-auto p-6">
+			{#key page.url.pathname}
+				<div in:fade={{ duration: 150 }} style={isBusy ? 'opacity: 0.55; transition: opacity 120ms ease;' : 'transition: opacity 120ms ease;'}>
+					{@render children()}
+				</div>
+			{/key}
 		</main>
 	</div>
 </div>
+
+<style>
+	.route-progress {
+		position: relative;
+		height: 2px;
+		width: 100%;
+		overflow: hidden;
+		background: var(--border-subtle);
+	}
+	.route-progress-bar {
+		position: absolute;
+		inset: 0;
+		width: 40%;
+		background: var(--accent);
+		border-radius: 9999px;
+		animation: route-progress-slide 1s ease-in-out infinite;
+	}
+	@keyframes route-progress-slide {
+		0% { left: -40%; }
+		50% { left: 40%; }
+		100% { left: 100%; }
+	}
+</style>
