@@ -182,9 +182,10 @@
 			</div>
 		{/if}
 
-		<!-- Content -->
+		<!-- Content. A key composta força remontagem quando muda de rota OU de vault,
+		garantindo que empty-states e dados reflitam o vault selecionado. -->
 		<main class="relative flex-1 overflow-y-auto p-6">
-			{#key page.url.pathname}
+			{#key `${page.url.pathname}|${data.selectedVault}`}
 				<div in:fade={{ duration: 150 }} style={isBusy ? 'opacity: 0.55; transition: opacity 120ms ease;' : 'transition: opacity 120ms ease;'}>
 					{@render children()}
 				</div>
