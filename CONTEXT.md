@@ -1,15 +1,10 @@
 # kv-interface — Contexto do Frontend
 
-## Tarefas Pendentes (2026-06-11)
+## Resolvido (2026-06-11)
 
-> O deploy atual no `lab-dilson` saiu do **working tree local** (não commitado).
-
-- [ ] **CSRF / troca de vault em produção** — o POST `/api/select-vault` (e os form actions de create/delete) tomam **403** quando o `Origin` do browser ≠ `ORIGIN` env (`http://lab-dilson:3000`). Sintoma: trocar de vault não atualiza nem mostra o empty-state. Decisão pendente do usuário:
-  - ajustar `ORIGIN` no docker-compose para a URL real de acesso (mantém CSRF, vale p/ 1 host), **ou**
-  - `kit.csrf.checkOrigin = false` no `svelte.config.js` (vale p/ qualquer host; alteração feita **localmente** mas **não deployada** — bloqueada por enfraquecer CSRF sem aval explícito).
-  - Falta confirmar: status do `select-vault` no Network (403/204/303) + URL exata de acesso.
-- [ ] **`onVaultChange` não checa `response.ok`** → falhas (ex.: 403) ficam silenciosas; surfacar erro ao usuário.
-- [ ] **Commit + push** do frontend (branch `feature/v1.1-multi-vault`).
+- [x] **CSRF / troca de vault em produção** — `csrf.checkOrigin = false` no `svelte.config.js`. Ferramenta interna self-hosted acessada por múltiplos hostnames (lab-dilson, FQDN Tailscale, IP).
+- [x] **`onVaultChange` não checa `response.ok`** — agora exibe erro i18n (`bar.vault_change_error`) em banner abaixo do header quando `fetch('/api/select-vault')` falha.
+- [x] **Commit + push** do frontend (branch `feature/v1.1-multi-vault`).
 
 ## Visão Geral
 
