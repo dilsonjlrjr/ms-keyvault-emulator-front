@@ -1,8 +1,12 @@
 <script lang="ts">
 	import type { ActionData } from './$types';
 	import { enhance } from '$app/forms';
+	import { getContext } from 'svelte';
+	import { t } from '$lib/i18n';
 
 	let { form }: { form: ActionData } = $props();
+	const lang = getContext('lang') as string;
+	const _ = (key: string) => t(key, lang);
 	let fileName = $state('');
 	let preview = $state<any>(null);
 
@@ -31,11 +35,11 @@
 			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
 			</svg>
-			Back to Vaults
+			{_('vaults.back')}
 		</a>
 	</div>
 
-	<h1 class="page-title mb-5">Import Vault</h1>
+	<h1 class="page-title mb-5">{_('vaults.import_title')}</h1>
 
 	{#if form?.error}
 		<div class="form-msg form-msg-error mb-4">{form.error}</div>
@@ -48,7 +52,7 @@
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
 					</svg>
-					<span class="text-sm font-semibold" style="color: var(--success);">Import Successful</span>
+					<span class="text-sm font-semibold" style="color: var(--success);">{_('vaults.vault_created')}</span>
 				</div>
 			</div>
 			<div class="card-body">
@@ -58,21 +62,21 @@
 				<div class="mt-3 grid grid-cols-3 gap-3">
 					<div class="rounded-md p-3 text-center" style="background: var(--bg-elevated);">
 						<p class="text-lg font-bold mono" style="color: var(--success);">{form.result.secrets_created}</p>
-						<p class="text-[0.625rem] uppercase tracking-wider" style="color: var(--text-muted);">Secrets</p>
+						<p class="text-[0.625rem] uppercase tracking-wider" style="color: var(--text-muted);">{_('nav.secrets')}</p>
 						{#if form.result.secrets_skipped > 0}
 							<p class="mt-0.5 text-[0.625rem]" style="color: var(--text-muted);">{form.result.secrets_skipped} skipped</p>
 						{/if}
 					</div>
 					<div class="rounded-md p-3 text-center" style="background: var(--bg-elevated);">
 						<p class="text-lg font-bold mono" style="color: var(--info);">{form.result.keys_created}</p>
-						<p class="text-[0.625rem] uppercase tracking-wider" style="color: var(--text-muted);">Keys</p>
+						<p class="text-[0.625rem] uppercase tracking-wider" style="color: var(--text-muted);">{_('nav.keys')}</p>
 						{#if form.result.keys_skipped > 0}
 							<p class="mt-0.5 text-[0.625rem]" style="color: var(--text-muted);">{form.result.keys_skipped} skipped</p>
 						{/if}
 					</div>
 					<div class="rounded-md p-3 text-center" style="background: var(--bg-elevated);">
 						<p class="text-lg font-bold mono" style="color: var(--warning);">{form.result.certs_created}</p>
-						<p class="text-[0.625rem] uppercase tracking-wider" style="color: var(--text-muted);">Certs</p>
+						<p class="text-[0.625rem] uppercase tracking-wider" style="color: var(--text-muted);">{_('nav.certificates')}</p>
 						{#if form.result.certs_skipped > 0}
 							<p class="mt-0.5 text-[0.625rem]" style="color: var(--text-muted);">{form.result.certs_skipped} skipped</p>
 						{/if}
@@ -128,9 +132,9 @@
 								Preview: {preview.vault.display_name || preview.vault.name}
 							</h3>
 							<div class="flex gap-4 text-xs" style="color: var(--text-secondary);">
-								<span><span class="font-semibold mono" style="color: var(--success); background: transparent; padding: 0;">{preview.secrets?.length || 0}</span> Secrets</span>
-								<span><span class="font-semibold mono" style="color: var(--info); background: transparent; padding: 0;">{preview.keys?.length || 0}</span> Keys</span>
-								<span><span class="font-semibold mono" style="color: var(--warning); background: transparent; padding: 0;">{preview.certificates?.length || 0}</span> Certificates</span>
+								<span><span class="font-semibold mono" style="color: var(--success); background: transparent; padding: 0;">{preview.secrets?.length || 0}</span> {_('nav.secrets')}</span>
+								<span><span class="font-semibold mono" style="color: var(--info); background: transparent; padding: 0;">{preview.keys?.length || 0}</span> {_('nav.keys')}</span>
+								<span><span class="font-semibold mono" style="color: var(--warning); background: transparent; padding: 0;">{preview.certificates?.length || 0}</span> {_('nav.certificates')}</span>
 							</div>
 						</div>
 					</div>
@@ -141,7 +145,7 @@
 					disabled={!fileName}
 					class="btn btn-primary w-full"
 				>
-					Import Vault
+					{_('vaults.import')}
 				</button>
 			</div>
 		</form>

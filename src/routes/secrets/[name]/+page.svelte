@@ -1,8 +1,14 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { getContext } from 'svelte';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
+
+	const lang = getContext<string>('lang');
+	const _ = (key: string) => t(key, lang);
+
 	let reveal = $state(false);
 	let copied = $state(false);
 
@@ -18,7 +24,7 @@
 	<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 		<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
 	</svg>
-	Back to Secrets
+	{_('secrets.detail.back')}
 </a>
 
 <h1 class="page-title mt-2 mb-5">{data.secret.name}</h1>
@@ -27,7 +33,7 @@
 	<!-- Secret Identifier -->
 	<div class="card">
 		<div class="card-header">
-			<span class="text-xs font-medium" style="color: var(--text-muted);">Secret Identifier</span>
+			<span class="text-xs font-medium" style="color: var(--text-muted);">{_('secrets.detail.content_type')}</span>
 		</div>
 		<div class="card-body">
 			<p class="mono break-all text-xs leading-relaxed" style="background: transparent; padding: 0;">{data.secret.id}</p>
@@ -37,7 +43,7 @@
 	<!-- Value -->
 	<div class="card">
 		<div class="card-header">
-			<span class="text-xs font-medium" style="color: var(--text-muted);">Value</span>
+			<span class="text-xs font-medium" style="color: var(--text-muted);">{_('secrets.th_value')}</span>
 			<div class="flex items-center gap-1.5">
 				{#if data.secret.value}
 					<button class="btn btn-ghost btn-sm" onclick={copyValue}>
@@ -79,22 +85,22 @@
 		<div class="card-body">
 			<div class="grid grid-cols-2 gap-4 text-sm">
 				<div>
-					<p class="text-xs" style="color: var(--text-muted);">Content Type</p>
-					<p class="mt-0.5 font-medium">{data.secret.contentType || '—'}</p>
+					<p class="text-xs" style="color: var(--text-muted);">{_('secrets.detail.content_type')}</p>
+					<p class="mt-0.5 font-medium">{data.secret.contentType || _('common.no_data')}</p>
 				</div>
 				<div>
-					<p class="text-xs" style="color: var(--text-muted);">Status</p>
+					<p class="text-xs" style="color: var(--text-muted);">{_('secrets.th_status')}</p>
 					<p class="mt-0.5">
 						{#if data.secret.attributes?.enabled}
-							<span class="badge badge-success">Enabled</span>
+							<span class="badge badge-success">{_('common.enabled')}</span>
 						{:else}
-							<span class="badge badge-danger">Disabled</span>
+							<span class="badge badge-danger">{_('common.disabled')}</span>
 						{/if}
 					</p>
 				</div>
 				{#if data.secret.attributes?.created}
 					<div>
-						<p class="text-xs" style="color: var(--text-muted);">Created</p>
+						<p class="text-xs" style="color: var(--text-muted);">{_('secrets.detail.created')}</p>
 						<p class="mt-0.5 font-medium" style="color: var(--text-secondary);">
 							{new Date(data.secret.attributes.created * 1000).toLocaleDateString('en-US', {
 								month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -104,7 +110,7 @@
 				{/if}
 				{#if data.secret.attributes?.updated}
 					<div>
-						<p class="text-xs" style="color: var(--text-muted);">Updated</p>
+						<p class="text-xs" style="color: var(--text-muted);">{_('secrets.th_updated')}</p>
 						<p class="mt-0.5 font-medium" style="color: var(--text-secondary);">
 							{new Date(data.secret.attributes.updated * 1000).toLocaleDateString('en-US', {
 								month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -114,7 +120,7 @@
 				{/if}
 				{#if data.secret.attributes?.expires}
 					<div>
-						<p class="text-xs" style="color: var(--text-muted);">Expires</p>
+						<p class="text-xs" style="color: var(--text-muted);">{_('secrets.detail.expires')}</p>
 						<p class="mt-0.5 font-medium" style="color: var(--warning);">
 							{new Date(data.secret.attributes.expires * 1000).toLocaleDateString('en-US', {
 								month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -133,11 +139,11 @@
 		</div>
 		<div class="card-body flex items-center justify-between">
 			<div>
-				<p class="text-sm font-medium" style="color: var(--text-primary);">Delete this secret</p>
+				<p class="text-sm font-medium" style="color: var(--text-primary);">{_('secrets.delete_title')}</p>
 				<p class="text-xs" style="color: var(--text-muted);">This action cannot be undone.</p>
 			</div>
 			<form method="POST" action="?/delete" use:enhance>
-				<button class="btn btn-danger">Delete Secret</button>
+				<button class="btn btn-danger">{_('secrets.delete_title')}</button>
 			</form>
 		</div>
 	</div>

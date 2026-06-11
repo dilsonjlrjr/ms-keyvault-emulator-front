@@ -1,5 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { getContext } from 'svelte';
+	import { t } from '$lib/i18n';
+
+	const lang = getContext('lang') as string;
+	const _ = (key: string) => t(key, lang);
 </script>
 
 <div class="flex min-h-[60vh] items-center justify-center p-6">
@@ -12,10 +17,10 @@
 			</svg>
 		</div>
 		<h1 class="text-lg font-semibold" style="color: var(--text-primary);">{page.status}</h1>
-		<p class="mt-2 text-sm" style="color: var(--text-muted);">{page.error?.message || 'An unexpected error occurred.'}</p>
+		<p class="mt-2 text-sm" style="color: var(--text-muted);">{page.error?.message || _('error.generic')}</p>
 		<p class="mt-4 text-xs" style="color: var(--text-muted);">
 			Verify the emulator is running and <code>KEYVAULT_EMULATOR_URL</code> is correct.
 		</p>
-		<a href="/secrets" class="btn btn-secondary mt-6 inline-flex">Go to Secrets</a>
+		<a href="/secrets" class="btn btn-secondary mt-6 inline-flex">{_('error.go_home')}</a>
 	</div>
 </div>

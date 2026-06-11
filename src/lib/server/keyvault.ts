@@ -265,7 +265,7 @@ export class KeyVaultClient {
 	async createVault(name: string, displayName?: string): Promise<VaultInfo> {
 		return this.mgmtRequest<VaultInfo>('/vaults', {
 			method: 'POST',
-			body: JSON.stringify({ name, displayName: displayName || undefined })
+			body: JSON.stringify({ name, displayName: displayName || undefined, tenantId: tenantId() })
 		});
 	}
 

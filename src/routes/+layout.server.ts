@@ -13,10 +13,12 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	}
 
 	const selectedVault = locals.selectedVault || env.KEYVAULT_DEFAULT_VAULT?.trim() || 'vault';
+	const lang = locals.lang || 'en';
 
 	return {
 		vaultTitle: env.KEYVAULT_TITLE?.trim() || 'One Keyvault',
 		vaults,
-		selectedVault
+		selectedVault,
+		lang
 	};
 };

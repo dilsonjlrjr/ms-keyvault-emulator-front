@@ -1,17 +1,14 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
 	import { enhance } from '$app/forms';
+	import { getContext } from 'svelte';
+	import { t } from '$lib/i18n';
+	import IntegrationsGuide from '$lib/IntegrationsGuide.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+	const lang = getContext('lang') as string;
+	const _ = (key: string) => t(key, lang);
 	let showCreate = $state(false);
-	let activeTab = $state('spring');
-
-	const tabs = [
-		{ key: 'spring', label: 'Spring Boot' },
-		{ key: 'env',    label: 'Environment' },
-		{ key: 'curl',   label: 'cURL Test' },
-		{ key: 'ca',     label: 'CA Certificate' }
-	] as const;
 
 	const total = $derived(data.vaults.length);
 
@@ -31,30 +28,26 @@
 				}
 			: null
 	);
-
-	function copyText(text: string) {
-		navigator.clipboard.writeText(text);
-	}
 </script>
 
 <div class="mx-auto" style="max-width: 48rem;">
 	<div class="page-header">
 		<div>
-			<h1 class="page-title">Vaults</h1>
-			<p class="page-subtitle">Manage your key vault instances.</p>
+			<h1 class="page-title">{_('vaults.title')}</h1>
+			<p class="page-subtitle">{_('vaults.subtitle')}</p>
 		</div>
 		<div class="flex gap-2">
 			<a href="/vaults/import" class="btn btn-secondary">
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
 				</svg>
-				Import
+				{_('vaults.import')}
 			</a>
 			<button class="btn btn-primary" onclick={() => (showCreate = !showCreate)}>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
 					<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
 				</svg>
-				New Vault
+				{_('vaults.create')}
 			</button>
 		</div>
 	</div>
@@ -62,7 +55,7 @@
 	<!-- Stats -->
 	<div class="mb-5 grid grid-cols-1 gap-3">
 		<div class="stat-card">
-			<p class="stat-label">Total Vaults</p>
+			<p class="stat-label">{_('vaults.total')}</p>
 			<p class="stat-value">{total}</p>
 		</div>
 	</div>
@@ -80,23 +73,23 @@
 			class="animate-fade-in card mb-5"
 		>
 			<div class="card-header">
-				<h2 class="text-sm font-semibold" style="color: var(--text-primary);">Create New Vault</h2>
+				<h2 class="text-sm font-semibold" style="color: var(--text-primary);">{_('vaults.create')}</h2>
 			</div>
 			<div class="card-body space-y-3">
 				<div>
-					<label class="mb-1 block text-xs font-medium" style="color: var(--text-muted);" for="vault-name">Vault Name</label>
-					<input id="vault-name" type="text" name="name" required placeholder="my-vault" class="input" />
+					<label class="mb-1 block text-xs font-medium" style="color: var(--text-muted);" for="vault-name">{_('vaults.name_label')}</label>
+					<input id="vault-name" type="text" name="name" required placeholder={_('vaults.name_placeholder')} class="input" />
 					<p class="mt-1 text-xs" style="color: var(--text-muted);">
 						Hostname: <code>your-name.kvemu.local:13000</code>
 					</p>
 				</div>
 				<div>
-					<label class="mb-1 block text-xs font-medium" style="color: var(--text-muted);" for="vault-display-name">Display Name <span style="color: var(--text-muted);">(optional)</span></label>
-					<input id="vault-display-name" type="text" name="display_name" placeholder="My Production Vault" class="input" />
+					<label class="mb-1 block text-xs font-medium" style="color: var(--text-muted);" for="vault-display-name">{_('vaults.display_label')}</label>
+					<input id="vault-display-name" type="text" name="display_name" placeholder={_('vaults.display_placeholder')} class="input" />
 				</div>
 				<div class="flex gap-2 pt-1">
-					<button type="submit" class="btn btn-primary">Create</button>
-					<button type="button" class="btn btn-secondary" onclick={() => (showCreate = false)}>Cancel</button>
+					<button type="submit" class="btn btn-primary">{_('vaults.create')}</button>
+					<button type="button" class="btn btn-secondary" onclick={() => (showCreate = false)}>{_('common.cancel')}</button>
 				</div>
 			</div>
 		</form>
@@ -110,305 +103,27 @@
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
 					</svg>
-					<span class="text-sm font-semibold" style="color: var(--accent);">Vault Created — Setup Guide</span>
+					<span class="text-sm font-semibold" style="color: var(--accent);">{_('vaults.vault_created')} — {_('vaults.setup_guide')}</span>
 				</div>
 				<span class="badge badge-muted">{setup.name}</span>
 			</div>
 
-			<div class="card-body space-y-4">
-				<p class="text-xs" style="color: var(--text-muted);">
-					Follow the steps below to integrate your application with this vault. The fake AAD accepts any <strong>client_id</strong> and <strong>client_secret</strong> — the values below are suggestions.
+			<div class="card-body">
+				<p class="text-xs mb-4" style="color: var(--text-muted);">
+					{_('vaults.use_guide')}
 				</p>
 
-				<!-- Tab pills -->
-				<div class="flex gap-1 rounded-lg p-0.5" style="background: var(--bg-elevated); width: fit-content;">
-					{#each tabs as tab (tab.key)}
-						<button
-							class="rounded-md px-3 py-1.5 text-xs font-medium transition-all"
-							style={activeTab === tab.key
-								? 'background: var(--accent-subtle); color: var(--accent);'
-								: 'color: var(--text-muted);'}
-							onclick={() => (activeTab = tab.key)}
-						>
-							{tab.label}
-						</button>
-					{/each}
-				</div>
+				<IntegrationsGuide />
 
-				<!-- Spring Boot tab -->
-				{#if activeTab === 'spring'}
-					<div class="space-y-4">
-						<div>
-							<p class="mb-2 text-xs font-semibold" style="color: var(--text-secondary);">1. Add Maven dependency</p>
-							<div class="relative rounded-lg p-3" style="background: var(--bg-input);">
-								<button
-									class="absolute right-2 top-2 btn btn-ghost btn-sm"
-									aria-label="Copy"
-									onclick={() => copyText(`<dependency>
-    <groupId>com.azure.spring</groupId>
-    <artifactId>spring-cloud-azure-starter-keyvault-secrets</artifactId>
-    <version>5.21.0</version>
-</dependency>`)}
-								>
-									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-									</svg>
-								</button>
-								<pre class="mono text-xs leading-relaxed" style="background: transparent; padding: 0; color: var(--text-secondary); overflow-x: auto;">{`<dependency>
-    <groupId>com.azure.spring</groupId>
-    <artifactId>spring-cloud-azure-starter-keyvault-secrets</artifactId>
-    <version>5.21.0</version>
-</dependency>`}</pre>
-							</div>
-						</div>
-
-						<div>
-							<p class="mb-2 text-xs font-semibold" style="color: var(--text-secondary);">2. Add <code class="text-xs">application.properties</code></p>
-							<div class="relative rounded-lg p-3" style="background: var(--bg-input);">
-								<button
-									class="absolute right-2 top-2 btn btn-ghost btn-sm"
-									aria-label="Copy"
-									onclick={() => copyText(`# Key Vault endpoint
-spring.cloud.azure.keyvault.secret.property-sources[0].endpoint=${setup.endpoint}
-spring.cloud.azure.keyvault.secret.property-sources[0].name=${setup.name}
-spring.cloud.azure.keyvault.secret.property-sources[0].refresh-interval=30m
-
-# Tenant and credentials (kvemu fake AAD)
-spring.cloud.azure.profile.tenant-id=${setup.tenantId}
-spring.cloud.azure.credential.client-id=your-app-id
-spring.cloud.azure.credential.client-secret=your-app-secret
-
-# Resolve secrets into Spring properties
-app.db-password=\${DB_PASSWORD}
-app.api-key=\${API_KEY}`)}
-								>
-									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-									</svg>
-								</button>
-								<pre class="mono text-xs leading-relaxed" style="background: transparent; padding: 0; color: var(--text-secondary); overflow-x: auto;">{`# Key Vault endpoint
-spring.cloud.azure.keyvault.secret.property-sources[0].endpoint=${setup.endpoint}
-spring.cloud.azure.keyvault.secret.property-sources[0].name=${setup.name}
-spring.cloud.azure.keyvault.secret.property-sources[0].refresh-interval=30m
-
-# Tenant and credentials (kvemu fake AAD)
-spring.cloud.azure.profile.tenant-id=${setup.tenantId}
-spring.cloud.azure.credential.client-id=your-app-id
-spring.cloud.azure.credential.client-secret=your-app-secret
-
-# Resolve secrets into Spring properties
-app.db-password=\${DB_PASSWORD}
-app.api-key=\${API_KEY}`}</pre>
-							</div>
-						</div>
-
-						<div>
-							<p class="mb-2 text-xs font-semibold" style="color: var(--text-secondary);">3. Use secrets in code</p>
-							<div class="relative rounded-lg p-3" style="background: var(--bg-input);">
-								<button
-									class="absolute right-2 top-2 btn btn-ghost btn-sm"
-									aria-label="Copy"
-									onclick={() => copyText(`@Value("\${app.db-password}")
-private String dbPassword;
-
-@Value("\${app.api-key}")
-private String apiKey;`)}
-								>
-									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-									</svg>
-								</button>
-								<pre class="mono text-xs leading-relaxed" style="background: transparent; padding: 0; color: var(--text-secondary); overflow-x: auto;">{`import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-@Component
-public class AppConfig {
-
-    @Value("\${app.db-password}")
-    private String dbPassword;
-
-    @Value("\${app.api-key}")
-    private String apiKey;
-
-    public String getDbPassword() { return dbPassword; }
-    public String getApiKey() { return apiKey; }
-}`}</pre>
-							</div>
-						</div>
-					</div>
-				{/if}
-
-				<!-- Environment tab -->
-				{#if activeTab === 'env'}
-					<div class="space-y-3">
-						<p class="text-xs" style="color: var(--text-muted);">
-							Set these environment variables in your application or <code class="text-xs">.env</code> file.
-						</p>
-						<div class="relative rounded-lg p-3" style="background: var(--bg-input);">
-							<button
-								class="absolute right-2 top-2 btn btn-ghost btn-sm"
-								aria-label="Copy"
-								onclick={() => copyText(`AZURE_KEYVAULT_ENDPOINT=${setup.endpoint}
-AZURE_TENANT_ID=${setup.tenantId}
-AZURE_CLIENT_ID=your-app-id
-AZURE_CLIENT_SECRET=your-app-secret`)}
-							>
-								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-								</svg>
-							</button>
-							<pre class="mono text-xs leading-relaxed" style="background: transparent; padding: 0; color: var(--text-secondary); overflow-x: auto;">{`AZURE_KEYVAULT_ENDPOINT=${setup.endpoint}
-AZURE_TENANT_ID=${setup.tenantId}
-AZURE_CLIENT_ID=your-app-id
-AZURE_CLIENT_SECRET=your-app-secret`}</pre>
-						</div>
-						<div class="rounded-lg p-3" style="background: var(--warning-subtle); border: 1px solid rgba(251, 191, 36, 0.20);">
-							<p class="text-xs font-medium" style="color: var(--warning);">DNS Setup</p>
-							<p class="mt-1 text-xs" style="color: var(--text-secondary);">
-								Your app must be able to resolve <code class="mono text-xs" style="background: transparent; padding: 0;">{setup.host}</code>.
-								If running <strong>inside Docker Compose</strong>, the internal network resolves it automatically.
-								If running <strong>locally</strong>, add to your <code class="text-xs">/etc/hosts</code>:
-							</p>
-							<div class="mt-2 rounded p-2" style="background: var(--bg-input);">
-								<code class="mono text-xs" style="background: transparent; padding: 0; color: var(--text-secondary);">127.0.0.1 {setup.host}</code>
-							</div>
-						</div>
-					</div>
-				{/if}
-
-				<!-- cURL tab -->
-				{#if activeTab === 'curl'}
-					<div class="space-y-3">
-						<p class="text-xs" style="color: var(--text-muted);">
-							Test your vault directly with <code class="text-xs">curl</code>. The emulator uses self-signed TLS — use <code class="text-xs">--insecure</code> or <code class="text-xs">--cacert</code>.
-						</p>
-
-						<div>
-							<p class="mb-1.5 text-xs font-semibold" style="color: var(--text-secondary);">1. Get an access token</p>
-							<div class="relative rounded-lg p-3" style="background: var(--bg-input);">
-								<button
-									class="absolute right-2 top-2 btn btn-ghost btn-sm"
-									aria-label="Copy"
-									onclick={() => copyText(`curl -sk -X POST https://${setup.emulatorHost}/${setup.tenantId}/oauth2/v2.0/token \\
-  -d 'grant_type=client_credentials' \\
-  -d 'client_id=test-client' \\
-  -d 'client_secret=test-secret' \\
-  -d 'scope=https://${setup.emulatorHost}/.default'`)}
-								>
-									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-									</svg>
-								</button>
-								<pre class="mono text-xs leading-relaxed" style="background: transparent; padding: 0; color: var(--text-secondary); overflow-x: auto;">{`# Step 1: Get a JWT token
-TOKEN=$(curl -sk -X POST https://${setup.emulatorHost}/${setup.tenantId}/oauth2/v2.0/token \\
-  -d 'grant_type=client_credentials' \\
-  -d 'client_id=test-client' \\
-  -d 'client_secret=test-secret' \\
-  -d 'scope=https://${setup.emulatorHost}/.default' | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)`}</pre>
-							</div>
-						</div>
-
-						<div>
-							<p class="mb-1.5 text-xs font-semibold" style="color: var(--text-secondary);">2. List secrets</p>
-							<div class="relative rounded-lg p-3" style="background: var(--bg-input);">
-								<button
-									class="absolute right-2 top-2 btn btn-ghost btn-sm"
-									aria-label="Copy"
-									onclick={() => copyText(`curl -sk ${setup.endpoint}/secrets?api-version=7.4 \\
-  -H "Authorization: Bearer $TOKEN"`)}
-								>
-									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-									</svg>
-								</button>
-								<pre class="mono text-xs leading-relaxed" style="background: transparent; padding: 0; color: var(--text-secondary); overflow-x: auto;">{`# Step 2: Use the token to access the vault
-curl -sk ${setup.endpoint}/secrets?api-version=7.4 \\
-  -H "Authorization: Bearer $TOKEN"`}</pre>
-							</div>
-						</div>
-					</div>
-				{/if}
-
-				<!-- CA Certificate tab -->
-				{#if activeTab === 'ca'}
-					<div class="space-y-4">
-						<p class="text-xs" style="color: var(--text-muted);">
-							kvemu generates a self-signed CA on first boot. Import it into your application's truststore.
-						</p>
-
-						<div>
-							<p class="mb-1.5 text-xs font-semibold" style="color: var(--text-secondary);">1. Export the CA certificate from kvemu</p>
-							<div class="relative rounded-lg p-3" style="background: var(--bg-input);">
-								<button
-									class="absolute right-2 top-2 btn btn-ghost btn-sm"
-									aria-label="Copy"
-									onclick={() => copyText('docker compose exec kvemu /kvemu ca export')}
-								>
-									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-									</svg>
-								</button>
-								<pre class="mono text-xs leading-relaxed" style="background: transparent; padding: 0; color: var(--text-secondary); overflow-x: auto;">{`# Docker: export CA from emulator container
-docker compose exec kvemu /kvemu ca export
-
-# Or download from healthz endpoint
-curl -sko ca.pem https://${setup.emulatorHost}/ca.pem`}</pre>
-							</div>
-						</div>
-
-						<div>
-							<p class="mb-1.5 text-xs font-semibold" style="color: var(--text-secondary);">2. Import into Java truststore</p>
-							<div class="relative rounded-lg p-3" style="background: var(--bg-input);">
-								<button
-									class="absolute right-2 top-2 btn btn-ghost btn-sm"
-									aria-label="Copy"
-									onclick={() => copyText(`keytool -importcert -noprompt \\
-  -alias kvemu-ca \\
-  -file ca.pem \\
-  -keystore $JAVA_HOME/lib/security/cacerts \\
-  -storepass changeit`)}
-								>
-									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-									</svg>
-								</button>
-								<pre class="mono text-xs leading-relaxed" style="background: transparent; padding: 0; color: var(--text-secondary); overflow-x: auto;">keytool -importcert -noprompt \\
-  -alias kvemu-ca \\
-  -file ca.pem \\
-  -keystore $JAVA_HOME/lib/security/cacerts \\
-  -storepass changeit</pre>
-							</div>
-						</div>
-
-						<div>
-							<p class="mb-1.5 text-xs font-semibold" style="color: var(--text-secondary);">3. Or use system property in Java</p>
-							<div class="relative rounded-lg p-3" style="background: var(--bg-input);">
-								<button
-									class="absolute right-2 top-2 btn btn-ghost btn-sm"
-									aria-label="Copy"
-									onclick={() => copyText(`-Djavax.net.ssl.trustStore=/path/to/custom-truststore.jks \\
--Djavax.net.ssl.trustStorePassword=changeit`)}
-								>
-									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-									</svg>
-								</button>
-								<pre class="mono text-xs leading-relaxed" style="background: transparent; padding: 0; color: var(--text-secondary); overflow-x: auto;">-Djavax.net.ssl.trustStore=/path/to/custom-truststore.jks \\
--Djavax.net.ssl.trustStorePassword=changeit</pre>
-							</div>
-						</div>
-					</div>
-				{/if}
-
-				<div class="flex gap-2 pt-1">
-					<a href="/vaults/{setup.name}/export" class="btn btn-secondary btn-sm">Export Vault</a>
+				<div class="flex gap-2 pt-4" style="border-top: 1px solid var(--border-subtle); margin-top: 1rem;">
+					<a href="/vaults/{setup.name}/export" class="btn btn-secondary btn-sm">{_('vaults.export')}</a>
 					<button
 						class="btn btn-ghost btn-sm"
 						onclick={() => {
 							form = null;
 						}}
 					>
-						Dismiss
+						{_('vaults.dismiss')}
 					</button>
 				</div>
 			</div>
@@ -429,10 +144,10 @@ curl -sko ca.pem https://${setup.emulatorHost}/ca.pem`}</pre>
 			<table>
 				<thead>
 					<tr>
-						<th>Name</th>
+						<th>{_('vaults.th_vault')}</th>
 						<th>Display Name</th>
-						<th>Host</th>
-						<th class="text-right">Actions</th>
+						<th>{_('vaults.th_host')}</th>
+						<th class="text-right">{_('vaults.th_actions')}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -441,21 +156,21 @@ curl -sko ca.pem https://${setup.emulatorHost}/ca.pem`}</pre>
 							<td>
 								<span class="font-medium mono" style="background: transparent; padding: 0;">{vault.name}</span>
 							</td>
-							<td style="color: var(--text-secondary);">{vault.displayName || '—'}</td>
+							<td style="color: var(--text-secondary);">{vault.displayName || _('common.no_data')}</td>
 							<td>
 								<code class="text-xs" style="color: var(--text-muted);">{vault.host}</code>
 							</td>
 							<td class="text-right">
 								<div class="flex justify-end gap-1.5">
-									<a href="/vaults/{vault.name}/export" class="btn btn-secondary btn-sm">Export</a>
+									<a href="/vaults/{vault.name}/export" class="btn btn-secondary btn-sm">{_('vaults.export')}</a>
 									<form method="POST" action="?/delete" use:enhance class="inline">
 										<input type="hidden" name="name" value={vault.name} />
 										<button
 											type="submit"
 											class="btn btn-danger btn-sm"
-											onclick={(e) => { if (!confirm(`Delete vault "${vault.name}" and ALL its secrets, keys, and certificates?`)) e.preventDefault(); }}
+											onclick={(e) => { if (!confirm(`${_('vaults.delete_confirm')} "${vault.name}" and ALL its secrets, keys, and certificates?`)) e.preventDefault(); }}
 										>
-											Delete
+											{_('common.delete')}
 										</button>
 									</form>
 								</div>

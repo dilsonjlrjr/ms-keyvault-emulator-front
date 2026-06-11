@@ -1,7 +1,12 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
+
+	const lang = getContext<string>('lang');
+	const _ = (key: string) => t(key, lang);
 
 	const total = $derived(data.keys.length);
 	const enabled = $derived(data.keys.filter((k) => k.attributes?.enabled).length);
@@ -17,23 +22,23 @@
 
 <div class="page-header">
 	<div>
-		<h1 class="page-title">Keys</h1>
-		<p class="page-subtitle">Cryptographic keys stored in your key vault.</p>
+		<h1 class="page-title">{_('keys.title')}</h1>
+		<p class="page-subtitle">{_('keys.subtitle')}</p>
 	</div>
 </div>
 
 <!-- Stats -->
 <div class="mb-5 grid grid-cols-3 gap-3">
 	<div class="stat-card">
-		<p class="stat-label">Total Keys</p>
+		<p class="stat-label">{_('keys.total')}</p>
 		<p class="stat-value">{total}</p>
 	</div>
 	<div class="stat-card">
-		<p class="stat-label">Enabled</p>
+		<p class="stat-label">{_('keys.enabled')}</p>
 		<p class="stat-value" style="color: var(--success);">{enabled}</p>
 	</div>
 	<div class="stat-card">
-		<p class="stat-label">Disabled</p>
+		<p class="stat-label">{_('keys.disabled')}</p>
 		<p class="stat-value" style="color: var(--text-muted);">{disabled}</p>
 	</div>
 </div>
@@ -43,18 +48,18 @@
 		<svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 			<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
 		</svg>
-		<p class="empty-state-title">No keys found</p>
-		<p class="empty-state-desc">Cryptographic keys will appear here once they are created in the vault.</p>
+		<p class="empty-state-title">{_('keys.empty_title')}</p>
+		<p class="empty-state-desc">{_('keys.empty_desc')}</p>
 	</div>
 {:else}
 	<div class="table-container">
 		<table>
 			<thead>
 				<tr>
-					<th>Name</th>
-					<th>Status</th>
-					<th>Updated</th>
-					<th>Expiration</th>
+					<th>{_('keys.th_name')}</th>
+					<th>{_('keys.th_status')}</th>
+					<th>{_('keys.th_updated')}</th>
+					<th>{_('keys.th_expiration')}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -65,9 +70,9 @@
 						</td>
 						<td>
 							{#if key.attributes?.enabled}
-								<span class="badge badge-success">Enabled</span>
+								<span class="badge badge-success">{_('common.enabled')}</span>
 							{:else}
-								<span class="badge badge-danger">Disabled</span>
+								<span class="badge badge-danger">{_('common.disabled')}</span>
 							{/if}
 						</td>
 						<td style="color: var(--text-secondary);">{fmt(key.attributes?.updated)}</td>

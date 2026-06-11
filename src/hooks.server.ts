@@ -5,5 +5,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (selectedVault) {
 		event.locals.selectedVault = selectedVault;
 	}
+
+	const lang = event.cookies.get('lang');
+	if (lang) {
+		event.locals.lang = lang;
+	}
+
 	return resolve(event);
 };
