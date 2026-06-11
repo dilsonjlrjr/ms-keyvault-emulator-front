@@ -58,7 +58,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each data.keys as key (key.id)}
+				{#each data.keys as key (key.name)}
 					<tr>
 						<td>
 							<span class="font-medium mono" style="background: transparent; padding: 0;">{key.name}</span>

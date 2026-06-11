@@ -85,14 +85,25 @@ async function finishResponse<T>(res: Awaited<ReturnType<typeof undiciFetch>>, p
 }
 
 function nameFromId(id: string) {
-	const parts = id.split('/');
-	return parts.length >= 2 ? parts[parts.length - 2] : parts[parts.length - 1];
+	const parts = id.split('/').filter(Boolean);
+	const last = parts[parts.length - 1];
+	const versionPattern = /^[0-9a-f]{32}$/;
+	if (last && versionPattern.test(last) && parts.length >= 2) {
+		return parts[parts.length - 2];
+	}
+	return last || '';
 }
 
 export interface VaultItem {
-	id: string;
+	id?: string;
+	key?: { kid?: string };
 	attributes?: { enabled?: boolean; created?: number; updated?: number; expires?: number | null };
 	tags?: Record<string, string>;
+}
+
+function itemName(item: VaultItem): string {
+	const keyId: string = (item as any).kid || item.key?.kid || item.id || '';
+	return nameFromId(keyId);
 }
 
 export interface VaultItemList {
@@ -218,7 +229,7 @@ export class KeyVaultClient {
 
 	async listSecrets() {
 		const data = await this.request<VaultItemList>('/secrets');
-		return data.value.map((item) => ({ ...item, name: nameFromId(item.id) }));
+		return data.value.map((item) => ({ ...item, name: itemName(item) }));
 	}
 
 	async getSecret(name: string) {
@@ -239,12 +250,12 @@ export class KeyVaultClient {
 
 	async listKeys() {
 		const data = await this.request<VaultItemList>('/keys');
-		return data.value.map((item) => ({ ...item, name: nameFromId(item.id) }));
+		return data.value.map((item) => ({ ...item, name: itemName(item) }));
 	}
 
 	async listCertificates() {
 		const data = await this.request<VaultItemList>('/certificates');
-		return data.value.map((item) => ({ ...item, name: nameFromId(item.id) }));
+		return data.value.map((item) => ({ ...item, name: itemName(item) }));
 	}
 
 	async listVaults(): Promise<VaultListResponse> {
