@@ -37,14 +37,17 @@ public class MyController {
 }
 `;
 
-  const springCA = `#!/bin/sh
-keytool -importcert -noprompt \\
-  -alias kvemu-ca \\
-  -file /certs/ca.pem \\
-  -keystore $JAVA_HOME/lib/security/cacerts \\
-  -storepass changeit
+  const springCA = `# Linux (Debian/Ubuntu)
+sudo cp ca.pem /usr/local/share/ca-certificates/kvemu.crt && sudo update-ca-certificates
 
-exec java -jar /app/app.jar
+# Linux (RHEL/Fedora)
+sudo cp ca.pem /etc/pki/ca-trust/source/anchors/kvemu.crt && sudo update-ca-trust
+
+# macOS
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ca.pem
+
+# Windows (PowerShell — run as Administrator)
+Import-Certificate -FilePath .\\ca.pem -CertStoreLocation Cert:\\LocalMachine\\Root
 `;
 
   const springDocker = `services:
@@ -294,7 +297,7 @@ resp.Body.Close()
   <div class="card" style="margin-bottom: 1rem;">
     <div class="card-header"><h2 class="text-sm font-semibold">{_('integrations.spring_ca')}</h2></div>
     <div class="card-body">
-      <p class="text-sm" style="color: var(--text-secondary); margin-bottom: 1rem;">Add to your Docker entrypoint to trust the kvemu CA:</p>
+      <p class="text-sm" style="color: var(--text-secondary); margin-bottom: 1rem;">Import the CA certificate into your operating system trust store:</p>
       {@render CodeBlock(springCA)}
     </div>
   </div>
