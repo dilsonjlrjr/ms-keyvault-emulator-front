@@ -4,8 +4,14 @@ import type { RequestHandler } from './$types';
 
 const insecureAgent = new Agent({ connect: { rejectUnauthorized: false } });
 
-export const GET: RequestHandler = async ({ params, cookies, url }) => {
-	const vault = cookies.get('selected_vault') || env.KEYVAULT_DEFAULT_VAULT?.trim() || 'vault';
+function emulatorUrl(): string {
+	const base = env.KEYVAULT_EMULATOR_URL;
+	if (!base) throw new Error('KEYVAULT_EMULATOR_URL not set');
+	return base.replace(/\/+$/, '');
+}
+
+export const GET: RequestHandler = async ({ params, url }) => {
+	const vault = params.vault;
 	const kvPath = params.path;
 	const kvQuery = url.searchParams.toString();
 
@@ -22,9 +28,3 @@ export const GET: RequestHandler = async ({ params, cookies, url }) => {
 		headers: { 'content-type': 'application/json' }
 	});
 };
-
-function emulatorUrl(): string {
-	const base = env.KEYVAULT_EMULATOR_URL;
-	if (!base) throw new Error('KEYVAULT_EMULATOR_URL not set');
-	return base.replace(/\/+$/, '');
-}

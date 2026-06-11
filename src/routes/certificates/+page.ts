@@ -9,9 +9,10 @@ interface VaultItem {
 	name: string;
 }
 
-export async function load({ fetch }: { fetch: (url: string) => Promise<Response> }) {
+export async function load({ fetch, parent }: { fetch: (url: string) => Promise<Response>; parent: () => Promise<{ selectedVault: string }> }) {
+	const { selectedVault } = await parent();
 	try {
-		const res = await fetch('/api/kv/certificates');
+		const res = await fetch(`/api/vault/${selectedVault}/kv/certificates`);
 		if (!res.ok) {
 			const msg = await res.text().catch(() => '');
 			error(res.status, `KV request failed: ${msg}`);
