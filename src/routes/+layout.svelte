@@ -7,6 +7,7 @@
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 	import { t, type Lang } from '$lib/i18n';
+	import { APP_VERSION } from '$lib/version';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
@@ -115,7 +116,7 @@
 				</svg>
 				{_('nav.manage_vaults')}
 			</a>
-			<p class="mt-2 text-[0.625rem] font-semibold uppercase tracking-wider" style="color: var(--text-muted);">v{__APP_VERSION__}</p>
+			<p class="mt-2 text-[0.625rem] font-semibold uppercase tracking-wider" style="color: var(--text-muted);">v{APP_VERSION}</p>
 		</div>
 	</aside>
 
