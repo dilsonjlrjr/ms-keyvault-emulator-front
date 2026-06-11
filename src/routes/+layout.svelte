@@ -12,22 +12,23 @@
 
 	const _ = (key: string) => t(key, page.data.lang as string || 'en');
 
-	// Troca de vault em andamento (fetch do cookie + invalidateAll dos loads).
 	let switchingVault = $state(false);
+	let vaultChangeError = $state<string | null>(null);
 
-	// Mostra a barra de progresso em navegação de rota OU troca de vault.
 	const isBusy = $derived(!!navigating.to || switchingVault);
 
-	// O endpoint /api/select-vault é um +server (não um form action), então NÃO
-	// usamos use:enhance. Seta o cookie via fetch e revalida os loads no cliente —
-	// transição suave, sem reload cheio.
 	async function onVaultChange(e: Event) {
 		const vault = (e.currentTarget as HTMLSelectElement).value;
+		vaultChangeError = null;
 		switchingVault = true;
 		try {
 			const body = new FormData();
 			body.set('vault', vault);
-			await fetch('/api/select-vault', { method: 'POST', body, redirect: 'manual' });
+			const response = await fetch('/api/select-vault', { method: 'POST', body });
+			if (!response.ok) {
+				vaultChangeError = _('bar.vault_change_error');
+				return;
+			}
 			await invalidateAll();
 		} finally {
 			switchingVault = false;
@@ -161,6 +162,18 @@
 				</div>
 			</div>
 		</header>
+
+		{#if vaultChangeError}
+			<div class="flex items-center gap-1.5 px-4 py-1.5 text-xs" style="background: var(--danger-subtle, #3b1111); color: var(--danger);" transition:fade={{ duration: 120 }}>
+				<span>{vaultChangeError}</span>
+				<button
+					class="ml-auto text-xs opacity-60 hover:opacity-100"
+					onclick={() => (vaultChangeError = null)}
+				>
+					&#x2715;
+				</button>
+			</div>
+		{/if}
 
 		<!-- Indeterminate progress bar (navegação / troca de vault) -->
 		{#if isBusy}

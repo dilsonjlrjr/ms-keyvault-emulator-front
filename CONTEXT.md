@@ -1,5 +1,16 @@
 # kv-interface — Contexto do Frontend
 
+## Tarefas Pendentes (2026-06-11)
+
+> O deploy atual no `lab-dilson` saiu do **working tree local** (não commitado).
+
+- [ ] **CSRF / troca de vault em produção** — o POST `/api/select-vault` (e os form actions de create/delete) tomam **403** quando o `Origin` do browser ≠ `ORIGIN` env (`http://lab-dilson:3000`). Sintoma: trocar de vault não atualiza nem mostra o empty-state. Decisão pendente do usuário:
+  - ajustar `ORIGIN` no docker-compose para a URL real de acesso (mantém CSRF, vale p/ 1 host), **ou**
+  - `kit.csrf.checkOrigin = false` no `svelte.config.js` (vale p/ qualquer host; alteração feita **localmente** mas **não deployada** — bloqueada por enfraquecer CSRF sem aval explícito).
+  - Falta confirmar: status do `select-vault` no Network (403/204/303) + URL exata de acesso.
+- [ ] **`onVaultChange` não checa `response.ok`** → falhas (ex.: 403) ficam silenciosas; surfacar erro ao usuário.
+- [ ] **Commit + push** do frontend (branch `feature/v1.1-multi-vault`).
+
 ## Visão Geral
 
 **kv-interface** é o painel web do **kvemu** (emulador Azure Key Vault), construído com SvelteKit 2. Fornece UI para gerenciar secrets, keys e certificates armazenados no emulador, com suporte a múltiplos vaults (v1.1).
@@ -23,14 +34,14 @@ frontend/
 │   │   ├── IntegrationsGuide.svelte  # Componente compartilhado: guia de integração
 │   │   ├── assets/favicon.svg        # Favicon
 │   │   └── server/
-│   │       └── keyvault.ts           # KeyVaultClient class + singleton getVaultClient()
+│   │       └── keyvault.ts           # KeyVaultClient (plano /ui) + getVaultClient()
 │   └── routes/
 │       ├── +layout.svelte            # Shell: sidebar + vault selector + lang switcher
 │       ├── +layout.server.ts         # Load vaults list + selectedVault + lang
 │       ├── +error.svelte             # Error page (i18n)
 │       ├── +page.server.ts           # Root → redirect /secrets
 │       ├── ca/                       # GET — serve CA certificate download
-│       ├── api/select-vault/         # POST — set cookie selected_vault + redirect
+│       ├── api/select-vault/         # POST — set cookie selected_vault, responde 204
 │       ├── secrets/                  # List + create/delete (i18n)
 │       │   └── [name]/              # Detail + reveal + delete (i18n)
 │       ├── keys/                     # List (read-only, i18n)
@@ -49,25 +60,16 @@ frontend/
 
 ## Fluxo de Autenticação
 
-O frontend autentica contra o AAD fake do kvemu via OAuth2 `client_credentials`:
-
-1. `POST /{tenant}/oauth2/v2.0/token` com body form-encoded:
-   ```
-   grant_type=client_credentials
-   client_id=kv-interface
-   client_secret=kv-interface-secret
-   scope=https://{host}/.default
-   ```
-2. Response JSON: `{ "access_token": "...", "expires_in": 3600, "token_type": "Bearer" }`
-3. Token cacheado em memória (80% do `expires_in`, máx 25min)
-4. Bearer token enviado em todas as chamadas data-plane
-5. Retry automático em 401/403: limpa cache, obtém token fresco, retenta 1x
+A UI **não autentica** contra o AAD fake. Ela consome o plano `/ui` do kvemu, que
+é sem AAD (igual ao management plane) — o `KeyVaultClient` faz chamadas server-side
+diretas, sem Bearer/token. O AAD fake (`/{tenant}/oauth2/...`) continua existindo no
+emulador, mas só para os **SDKs Azure reais** que falam a data-plane 7.4 via `Host`.
 
 ### Detalhes de implementação
 
 - TLS: `rejectUnauthorized: false` (kvemu usa certificado autoassinado)
-- `api-version=7.4` em todas as chamadas data-plane
-- Scope construído extraindo `host:port` da `KEYVAULT_EMULATOR_URL`
+- Vault explícito no path: `${KEYVAULT_EMULATOR_URL}/ui/vaults/{vault}/...`
+- Todas as chamadas são server-side (adapter-node), nunca expostas ao browser
 
 ---
 
@@ -119,7 +121,7 @@ Arquivo central com ~100 chaves de tradução organizadas por domínio:
 | `KEYVAULT_EMULATOR_URL` | URL base do kvemu | `https://localhost:13000` |
 | `KEYVAULT_TENANT_ID` | Tenant ID p/ OAuth2 | `a0c2a3f5-e1b3-4d6a-9c41-2cdd1f2c7e0f` |
 | `KEYVAULT_TITLE` | Título no header | `One Keyvault` |
-| `KEYVAULT_BASE_DOMAIN` | Domínio base p/ multi-vault | `kvemu.local` |
+| `KEYVAULT_BASE_DOMAIN` | Domínio base exibido no Setup Guide (`/vaults`) p/ SDKs Azure. Não é mais usado p/ rotear o KeyVaultClient (que usa o plano `/ui`) | `kvemu.local` |
 | `KEYVAULT_DEFAULT_VAULT` | Nome do vault padrão | `vault` |
 | `KV_CA_FILE` | Caminho do CA p/ download | `/certs/ca.pem` |
 | `PORT` | Porta do servidor SvelteKit | `3000` |
@@ -129,28 +131,31 @@ Arquivo central com ~100 chaves de tradução organizadas por domínio:
 
 ## Endpoints da API (kvemu)
 
-### Auth (público, sem Bearer)
-| Método | Path | Uso |
-|--------|------|-----|
-| POST | `/{tenant}/oauth2/v2.0/token` | Obter JWT (client_credentials) |
+A UI consome o **plano `/ui`** do kvemu (fora da spec Azure): vault explícito no
+path, **sem Bearer/token, sem subdomínio**. O backend resolve o vault pelo path
+(`VaultFromPath`) e filtra os dados — roteamento determinístico, sem depender de
+DNS. A data-plane Azure 7.4 (Host-based) é usada só pelos SDKs reais, não pela UI.
 
 ### Secrets
 | Método | Path | Função |
 |--------|------|--------|
-| GET | `/secrets?api-version=7.4` | `listSecrets()` |
-| GET | `/secrets/{name}?api-version=7.4` | `getSecret(name)` |
-| PUT | `/secrets/{name}?api-version=7.4` | `setSecret(name, value)` |
-| DELETE | `/secrets/{name}?api-version=7.4` | `deleteSecret(name)` |
+| GET | `/ui/vaults/{vault}/secrets` | `listSecrets()` |
+| GET | `/ui/vaults/{vault}/secrets/{name}` | `getSecret(name)` |
+| PUT | `/ui/vaults/{vault}/secrets/{name}` | `setSecret(name, value)` |
+| DELETE | `/ui/vaults/{vault}/secrets/{name}` | `deleteSecret(name)` |
 
 ### Keys
 | Método | Path | Função |
 |--------|------|--------|
-| GET | `/keys?api-version=7.4` | `listKeys()` |
+| GET | `/ui/vaults/{vault}/keys` | `listKeys()` |
 
 ### Certificates
 | Método | Path | Função |
 |--------|------|--------|
-| GET | `/certificates?api-version=7.4` | `listCertificates()` |
+| GET | `/ui/vaults/{vault}/certificates` | `listCertificates()` |
+
+> `{vault}` vem de `locals.selectedVault`. A gestão de vaults (`/vaults`) e o
+> download da CA (`/ca`) continuam nos seus endpoints próprios.
 
 ---
 
@@ -191,15 +196,14 @@ O nome do item é extraído do penúltimo segmento do `id` (ex: `https://host/se
 | `/vaults/[name]/export` | Download do vault como JSON |
 | `/integrations` | Guia completo de integração Spring Boot + Go |
 | `/ca` | Download do certificado CA (GET → PEM file) |
-| `/api/select-vault` | POST — seta cookie `selected_vault` e redireciona |
+| `/api/select-vault` | POST — seta cookie `selected_vault`, responde 204 (cliente faz `invalidateAll`) |
 
 ### Layout (`+layout.svelte`)
 
 - **Tema:** Dark "Secure Console" (fundo #09090b, accent teal #2dd4bf)
 - **Sidebar:** Logo kvemu, nav items i18n (Objects, Secrets, Keys, Certificates, Integrations), footer "Manage Vaults"
 - **Top bar:** Badge "local", vault selector dropdown, language switcher (EN/PT/ES)
-- **Vault selector:** `<select>` com `value={data.selectedVault}` + `onchange` que submete form nativo para `/api/select-vault`
-- **Redirect-back:** `/api/select-vault` lê campo `from` do form e redireciona para a página atual (não sempre `/secrets`)
+- **Vault selector:** `<select>` com `value={data.selectedVault}` + `onchange` que faz `fetch` POST p/ `/api/select-vault` (204) e então `invalidateAll()` — troca client-side suave
 
 ---
 
@@ -279,14 +283,15 @@ O frontend é um cliente data-plane puro do kvemu:
 
 ### Vault Selector
 - Dropdown no header com `value={data.selectedVault}` (do cookie)
-- Form nativo POST p/ `/api/select-vault` com campo `from` p/ redirect-back
+- `onchange` faz `fetch` p/ `/api/select-vault` (seta o cookie) + `invalidateAll()` — troca client-side suave, sem reload cheio. Select desabilita enquanto carrega
+- Barra de progresso indeterminada + fade no conteúdo em navegação/troca de vault (store `navigating` + flag `switchingVault`)
 - Cookie `selected_vault` persiste seleção
 
 ### KeyVaultClient (`lib/server/keyvault.ts`)
-- Singleton `getVaultClient(vaultName?)` — sem argumentos usa `KEYVAULT_DEFAULT_VAULT`
-- `vaultUrl` constrói `https://{name}.{baseDomain}:{port}`
-- `mgmtRequest()` usa `emulatorUrl()` diretamente (sem vault prefix)
-- Token OAuth2 cacheado globalmente, compartilhado entre vaults
+- `getVaultClient(vaultName?)` — retorna `new KeyVaultClient(...)`; sem argumento usa `KEYVAULT_DEFAULT_VAULT`
+- `request()` fala o plano `/ui`: `${emulatorUrl}/ui/vaults/{vaultName}/...` — **sem token AAD, sem subdomínio**
+- `mgmtRequest()` usa `emulatorUrl()` diretamente para a gestão de vaults (`/vaults`)
+- Sem singleton/cache de token (removidos): roteamento por vault é determinístico pelo path
 
 ### Management API (sem AAD auth)
 | Método | Path | Uso |
@@ -313,4 +318,4 @@ O frontend é um cliente data-plane puro do kvemu:
 | `src/routes/vaults/import/+page.svelte` | Upload JSON p/ importar vault |
 | `src/routes/integrations/+page.svelte` | Página de guia de integração |
 | `src/routes/ca/+server.ts` | Endpoint download CA certificate |
-| `src/routes/api/select-vault/+server.ts` | Cookie selected_vault + redirect |
+| `src/routes/api/select-vault/+server.ts` | Seta cookie selected_vault, responde 204 |

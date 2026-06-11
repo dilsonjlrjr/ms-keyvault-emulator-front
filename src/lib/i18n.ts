@@ -12,6 +12,7 @@ const dict: Record<string, Record<Lang, string>> = {
 	// ── Top bar ──
 	'bar.local': { en: 'local', pt: 'local', es: 'local' },
 	'bar.title': { en: 'Key Vault Emulator', pt: 'Emulador Key Vault', es: 'Emulador Key Vault' },
+	'bar.vault_change_error': { en: 'Failed to switch vault', pt: 'Falha ao trocar de vault', es: 'Error al cambiar de bóveda' },
 
 	// ── Secrets page ──
 	'secrets.title': { en: 'Secrets', pt: 'Segredos', es: 'Secretos' },
@@ -20,7 +21,7 @@ const dict: Record<string, Record<Lang, string>> = {
 	'secrets.enabled': { en: 'Enabled', pt: 'Ativos', es: 'Activos' },
 	'secrets.disabled': { en: 'Disabled', pt: 'Inativos', es: 'Inactivos' },
 	'secrets.empty_title': { en: 'No secrets found', pt: 'Nenhum segredo encontrado', es: 'No se encontraron secretos' },
-	'secrets.empty_desc': { en: 'Secrets will appear here once they are created in the vault.', pt: 'Os segredos aparecerão aqui assim que forem criados no cofre.', es: 'Los secretos aparecerán aquí una vez que se creen en la bóveda.' },
+	'secrets.empty_desc': { en: 'The vault “{vault}” has no secrets yet. Create one to get started.', pt: 'O vault “{vault}” ainda não tem segredos. Crie um para começar.', es: 'La bóveda “{vault}” aún no tiene secretos. Crea uno para empezar.' },
 	'secrets.th_name': { en: 'Name', pt: 'Nome', es: 'Nombre' },
 	'secrets.th_status': { en: 'Status', pt: 'Status', es: 'Estado' },
 	'secrets.th_updated': { en: 'Updated', pt: 'Atualizado', es: 'Actualizado' },
@@ -49,7 +50,7 @@ const dict: Record<string, Record<Lang, string>> = {
 	'keys.enabled': { en: 'Enabled', pt: 'Ativas', es: 'Activas' },
 	'keys.disabled': { en: 'Disabled', pt: 'Inativas', es: 'Inactivas' },
 	'keys.empty_title': { en: 'No keys found', pt: 'Nenhuma chave encontrada', es: 'No se encontraron claves' },
-	'keys.empty_desc': { en: 'Cryptographic keys will appear here once they are created in the vault.', pt: 'As chaves criptográficas aparecerão aqui assim que forem criadas no cofre.', es: 'Las claves criptográficas aparecerán aquí una vez que se creen en la bóveda.' },
+	'keys.empty_desc': { en: 'The vault “{vault}” has no keys yet.', pt: 'O vault “{vault}” ainda não tem chaves.', es: 'La bóveda “{vault}” aún no tiene claves.' },
 	'keys.th_name': { en: 'Name', pt: 'Nome', es: 'Nombre' },
 	'keys.th_status': { en: 'Status', pt: 'Status', es: 'Estado' },
 	'keys.th_updated': { en: 'Updated', pt: 'Atualizado', es: 'Actualizado' },
@@ -62,7 +63,7 @@ const dict: Record<string, Record<Lang, string>> = {
 	'certs.enabled': { en: 'Enabled', pt: 'Ativos', es: 'Activos' },
 	'certs.disabled': { en: 'Disabled', pt: 'Inativos', es: 'Inactivos' },
 	'certs.empty_title': { en: 'No certificates found', pt: 'Nenhum certificado encontrado', es: 'No se encontraron certificados' },
-	'certs.empty_desc': { en: 'Certificates will appear here once they are created in the vault.', pt: 'Os certificados aparecerão aqui assim que forem criados no cofre.', es: 'Los certificados aparecerán aquí una vez que se creen en la bóveda.' },
+	'certs.empty_desc': { en: 'The vault “{vault}” has no certificates yet.', pt: 'O vault “{vault}” ainda não tem certificados.', es: 'La bóveda “{vault}” aún no tiene certificados.' },
 	'certs.th_name': { en: 'Name', pt: 'Nome', es: 'Nombre' },
 	'certs.th_status': { en: 'Status', pt: 'Status', es: 'Estado' },
 	'certs.th_updated': { en: 'Updated', pt: 'Atualizado', es: 'Actualizado' },

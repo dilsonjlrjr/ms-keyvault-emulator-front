@@ -11,6 +11,14 @@
 	const enabled = $derived(data.keys.filter((k) => k.attributes?.enabled).length);
 	const disabled = $derived(total - enabled);
 
+	const vaultLabel = $derived(
+		(page.data.vaults as Array<{ name: string; displayName?: string }> | undefined)?.find(
+			(v) => v.name === page.data.selectedVault
+		)?.displayName ||
+			(page.data.selectedVault as string) ||
+			'—'
+	);
+
 	function fmt(epoch?: number | null) {
 		if (!epoch) return '—';
 		return new Date(epoch * 1000).toLocaleDateString('en-US', {
@@ -48,7 +56,7 @@
 			<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
 		</svg>
 		<p class="empty-state-title">{_('keys.empty_title')}</p>
-		<p class="empty-state-desc">{_('keys.empty_desc')}</p>
+		<p class="empty-state-desc">{_('keys.empty_desc').replace('{vault}', vaultLabel)}</p>
 	</div>
 {:else}
 	<div class="table-container">

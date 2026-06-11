@@ -7,7 +7,9 @@
 <a id="english"></a>
 ## 🇺🇸 English
 
-Web dashboard for [**kvemu**](../backend), an Azure Key Vault emulator. Browse, create, and manage Secrets, Keys, and Certificates from your browser.
+Web dashboard for [**kvemu**](../backend), an Azure Key Vault emulator. Browse, create, and manage Secrets, Keys, and Certificates from your browser — across multiple vaults, switchable from the header.
+
+Talks to kvemu's dedicated `/ui` plane (vault in the path, no token), so vault isolation is deterministic and never depends on DNS/subdomains.
 
 **Stack:** SvelteKit 2 (Svelte 5 runes) · TypeScript 6 · Tailwind CSS 4 · Vite 8 · adapter-node · undici · Dark "Secure Console" theme · i18n (en/pt/es)
 
@@ -33,7 +35,9 @@ Open **http://localhost:3000**.
 <a id="português"></a>
 ## 🇧🇷 Português
 
-Painel web para o [**kvemu**](../backend), um emulador do Azure Key Vault. Navegue, crie e gerencie Secrets, Keys e Certificates pelo navegador.
+Painel web para o [**kvemu**](../backend), um emulador do Azure Key Vault. Navegue, crie e gerencie Secrets, Keys e Certificates pelo navegador — em múltiplos vaults, alternáveis pelo header.
+
+Fala com o plano `/ui` dedicado do kvemu (vault no path, sem token), então o isolamento por vault é determinístico e nunca depende de DNS/subdomínio.
 
 **Stack:** SvelteKit 2 (Svelte 5 runes) · TypeScript 6 · Tailwind CSS 4 · Vite 8 · adapter-node · undici · tema Dark "Secure Console" · i18n (en/pt/es)
 

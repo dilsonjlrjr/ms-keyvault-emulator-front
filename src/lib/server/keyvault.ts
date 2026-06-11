@@ -1,8 +1,6 @@
 import { Agent, fetch as undiciFetch, type RequestInit as UndiciRequestInit } from 'undici';
 import { env } from '$env/dynamic/private';
 
-const API_VERSION = '7.4';
-
 const insecureAgent = new Agent({ connect: { rejectUnauthorized: false } });
 
 function emulatorUrl(): string {
@@ -11,68 +9,8 @@ function emulatorUrl(): string {
 	return base.replace(/\/+$/, '');
 }
 
-function baseDomain(): string {
-	return env.KEYVAULT_BASE_DOMAIN?.trim() || extractDomain(emulatorUrl());
-}
-
-function emulatorPort(): string {
-	try {
-		return new URL(emulatorUrl()).port || '13000';
-	} catch {
-		return '13000';
-	}
-}
-
-function extractDomain(url: string): string {
-	try {
-		const host = new URL(url).hostname;
-		return host === 'localhost' ? 'localhost' : host;
-	} catch {
-		return 'localhost';
-	}
-}
-
 function tenantId(): string {
 	return env.KEYVAULT_TENANT_ID?.trim() || 'a0c2a3f5-e1b3-4d6a-9c41-2cdd1f2c7e0f';
-}
-
-let cachedToken: { value: string; expiresAt: number } | null = null;
-const TOKEN_TTL_MS = 25 * 60 * 1000;
-
-async function getToken(): Promise<string> {
-	if (cachedToken && cachedToken.expiresAt > Date.now()) {
-		return cachedToken.value;
-	}
-
-	const baseURL = emulatorUrl();
-	const host = baseURL.replace(/^https?:\/\//, '');
-	const scope = `https://${host}/.default`;
-	const params = new URLSearchParams({
-		grant_type: 'client_credentials',
-		client_id: 'kv-interface',
-		client_secret: 'kv-interface-secret',
-		scope
-	});
-
-	const tokenURL = `${baseURL}/${tenantId()}/oauth2/v2.0/token`;
-	const res = await undiciFetch(tokenURL, {
-		method: 'POST',
-		dispatcher: insecureAgent,
-		headers: { 'content-type': 'application/x-www-form-urlencoded' },
-		body: params.toString()
-	});
-
-	if (!res.ok) {
-		const body = await res.text().catch(() => '');
-		throw new Error(`Token fetch failed: ${res.status} ${body}`);
-	}
-
-	const data = (await res.json()) as { access_token: string; expires_in: number };
-	if (!data.access_token) throw new Error('Empty token returned');
-
-	const ttlMs = Math.min((data.expires_in || 3600) * 1000, TOKEN_TTL_MS);
-	cachedToken = { value: data.access_token, expiresAt: Date.now() + ttlMs };
-	return data.access_token;
 }
 
 async function finishResponse<T>(res: Awaited<ReturnType<typeof undiciFetch>>, path: string): Promise<T> {
@@ -172,48 +110,22 @@ export class KeyVaultClient {
 		this.vaultName = vaultName;
 	}
 
-	get vaultUrl(): string {
-		const domain = baseDomain();
-		const port = emulatorPort();
-		if (domain === this.vaultName || this.vaultName === domain) {
-			return `https://${domain}:${port}`;
-		}
-		return `https://${this.vaultName}.${domain}:${port}`;
-	}
-
 	private get managementUrl(): string {
 		return emulatorUrl();
 	}
 
+	// Data-plane servido pelos endpoints /ui do kvemu: vault explícito no path,
+	// sem AAD/Host mágico — roteamento determinístico por vault.
 	private async request<T>(path: string, init?: UndiciRequestInit): Promise<T> {
-		const url = `${this.vaultUrl}${path}${path.includes('?') ? '&' : '?'}api-version=${API_VERSION}`;
-		const token = await getToken();
-
+		const url = `${this.managementUrl}/ui/vaults/${encodeURIComponent(this.vaultName)}${path}`;
 		const res = await undiciFetch(url, {
 			...init,
 			dispatcher: insecureAgent,
 			headers: {
 				'content-type': 'application/json',
-				authorization: `Bearer ${token}`,
 				...(init?.headers ?? {})
 			}
 		});
-
-		if (res.status === 401 || res.status === 403) {
-			cachedToken = null;
-			const freshToken = await getToken();
-			const retry = await undiciFetch(url, {
-				...init,
-				dispatcher: insecureAgent,
-				headers: {
-					'content-type': 'application/json',
-					authorization: `Bearer ${freshToken}`,
-					...(init?.headers ?? {})
-				}
-			});
-			return finishResponse<T>(retry, path);
-		}
-
 		return finishResponse<T>(res, path);
 	}
 
@@ -289,14 +201,6 @@ export class KeyVaultClient {
 	}
 }
 
-let defaultClient: KeyVaultClient | null = null;
-
 export function getVaultClient(vaultName?: string): KeyVaultClient {
-	if (!vaultName) {
-		vaultName = env.KEYVAULT_DEFAULT_VAULT?.trim() || 'vault';
-	}
-	if (!defaultClient || defaultClient.vaultUrl !== new KeyVaultClient(vaultName).vaultUrl) {
-		defaultClient = new KeyVaultClient(vaultName);
-	}
-	return defaultClient;
+	return new KeyVaultClient(vaultName?.trim() || env.KEYVAULT_DEFAULT_VAULT?.trim() || 'vault');
 }
