@@ -142,6 +142,8 @@
 				<p class="text-xs" style="color: var(--text-muted);">This action cannot be undone.</p>
 			</div>
 			<form method="POST" action="?/delete" use:enhance>
+				<input type="hidden" name="name" value={data.secret.name} />
+				<input type="hidden" name="vault" value={page.data.selectedVault} />
 				<button class="btn btn-danger">{_('secrets.delete_title')}</button>
 			</form>
 		</div>

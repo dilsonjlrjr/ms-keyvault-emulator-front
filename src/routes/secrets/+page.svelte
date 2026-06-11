@@ -80,6 +80,7 @@
 			<h2 class="text-sm font-semibold" style="color: var(--text-primary);">{_('secrets.create')}</h2>
 		</div>
 		<div class="card-body space-y-3">
+			<input type="hidden" name="vault" value={page.data.selectedVault} />
 			<div>
 				<label class="mb-1 block text-xs font-medium" style="color: var(--text-muted);" for="secret-name">{_('secrets.th_name')}</label>
 				<input id="secret-name" name="name" required placeholder={_('secrets.name_placeholder')} class="input" />
@@ -138,6 +139,7 @@
 						<td class="text-right">
 							<form method="POST" action="?/delete" use:enhance class="inline">
 								<input type="hidden" name="name" value={secret.name} />
+								<input type="hidden" name="vault" value={page.data.selectedVault} />
 								<button class="btn btn-ghost btn-sm" style="color: var(--danger);">{_('secrets.delete')}</button>
 							</form>
 						</td>
