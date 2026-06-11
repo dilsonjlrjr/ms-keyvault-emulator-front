@@ -2,9 +2,9 @@
 
 ## Visão Geral
 
-**kv-interface** é o painel web do **kvemu** (emulador Azure Key Vault), construído com SvelteKit 2. Fornece UI para gerenciar secrets, keys e certificates armazenados no emulador.
+**kv-interface** é o painel web do **kvemu** (emulador Azure Key Vault), construído com SvelteKit 2. Fornece UI para gerenciar secrets, keys e certificates armazenados no emulador, com suporte a múltiplos vaults (v1.1).
 
-**Stack:** SvelteKit 2 (Svelte 5, runes mode), TypeScript 6, Tailwind CSS 4, Vite 8, adapter-node, undici (HTTP client).
+**Stack:** SvelteKit 2 (Svelte 5, runes mode), TypeScript 6, Tailwind CSS 4, Vite 8, adapter-node, undici (HTTP client), i18n (en/pt/es).
 
 ---
 
@@ -13,30 +13,36 @@
 ```
 frontend/
 ├── src/
-│   ├── app.d.ts                      # Type declarations (Locals.selectedVault)
+│   ├── app.d.ts                      # Locals: selectedVault, lang
 │   ├── app.html                      # Root HTML shell
-│   ├── app.css                       # Global CSS + Tailwind + Azure Portal theme vars
-│   ├── hooks.server.ts               # Cookie selected_vault → locals (v1.1)
+│   ├── app.css                       # Global CSS + Tailwind + Dark "Secure Console" theme
+│   ├── hooks.server.ts               # Cookie: selectedVault + lang → locals
 │   ├── lib/
 │   │   ├── index.ts                  # Barrel (vazio)
+│   │   ├── i18n.ts                   # Dicionário de traduções en/pt/es + função t()
+│   │   ├── IntegrationsGuide.svelte  # Componente compartilhado: guia de integração
 │   │   ├── assets/favicon.svg        # Favicon
 │   │   └── server/
-│   │       └── keyvault.ts           # KeyVaultClient class + management API (v1.1)
+│   │       └── keyvault.ts           # KeyVaultClient class + singleton getVaultClient()
 │   └── routes/
-│       ├── +layout.svelte            # Shell: header + vault selector + sidebar nav (v1.1)
-│       ├── +layout.server.ts         # Load vaults list + selectedVault (v1.1)
-│       ├── +error.svelte             # Error page
+│       ├── +layout.svelte            # Shell: sidebar + vault selector + lang switcher
+│       ├── +layout.server.ts         # Load vaults list + selectedVault + lang
+│       ├── +error.svelte             # Error page (i18n)
 │       ├── +page.server.ts           # Root → redirect /secrets
-│       ├── api/select-vault/         # POST — set cookie + redirect (v1.1)
-│       ├── secrets/                  # List + create/delete, [name] detail
-│       ├── keys/                     # List (read-only)
-│       ├── certificates/             # List (read-only)
-│       └── vaults/                   # CRUD + export + import (v1.1)
+│       ├── ca/                       # GET — serve CA certificate download
+│       ├── api/select-vault/         # POST — set cookie selected_vault + redirect
+│       ├── secrets/                  # List + create/delete (i18n)
+│       │   └── [name]/              # Detail + reveal + delete (i18n)
+│       ├── keys/                     # List (read-only, i18n)
+│       ├── certificates/             # List (read-only, i18n)
+│       ├── vaults/                   # CRUD + setup guide com IntegrationsGuide (i18n)
+│       │   └── import/              # Upload JSON para importar vault (i18n)
+│       └── integrations/             # Guia de integração (Spring Boot + Go)
 ├── static/robots.txt
 ├── Dockerfile                        # Multi-stage (node:22-alpine)
 ├── docker-compose.yml                # kvemu + kv-interface
-├── .env.example                      # Env vars de referência
-└── dist/                             # Pacote de deploy pré-buildado
+├── README.md
+└── CONTEXT.md
 ```
 
 ---
@@ -65,6 +71,47 @@ O frontend autentica contra o AAD fake do kvemu via OAuth2 `client_credentials`:
 
 ---
 
+## Internacionalização (i18n)
+
+Suporte completo a **Inglês, Português e Espanhol** (en/pt/es).
+
+### Fluxo de linguagem
+
+1. `hooks.server.ts` lê cookie `lang` → `event.locals.lang`
+2. `+layout.server.ts` retorna `lang: locals.lang || 'en'`
+3. `+layout.svelte` expõe botões EN/PT/ES no header que setam cookie + recarregam a página
+4. Todos os componentes usam `page.data.lang` do `$app/state` para obter o idioma atual
+5. Função helper `_ = (key) => t(key, page.data.lang)` resolve traduções do dicionário em `$lib/i18n.ts`
+
+### Dicionário de traduções (`$lib/i18n.ts`)
+
+Arquivo central com ~100 chaves de tradução organizadas por domínio:
+- `nav.*` — navegação lateral
+- `bar.*` — barra superior
+- `secrets.*` — página de secrets (lista, criação, detalhe)
+- `keys.*` — página de keys
+- `certs.*` — página de certificates
+- `vaults.*` — página de vaults (criação, setup guide, import, tabela)
+- `integrations.*` — guia de integração (títulos, descrições)
+- `error.*` — página de erro
+- `common.*` — strings compartilhadas (Enabled, Disabled, Delete, Cancel, etc.)
+
+### Componente `IntegrationsGuide`
+
+- **Arquivo:** `$lib/IntegrationsGuide.svelte`
+- **Uso:** Compartilhado entre `/integrations` e o Setup Guide após criar vault em `/vaults`
+- **Conteúdo:** Guia completo de integração com:
+  1. "Local Machine Setup" — download CA, /etc/hosts, JAVA_TOOL_OPTIONS
+  2. Spring Boot — configuration, secrets no código, CA import, Docker Compose
+  3. Go — HTTP client, set/encrypt/decrypt/list secrets
+  4. Tabela de variáveis de ambiente do kvemu
+  5. Tabela de compatibilidade (Spring Boot 2.7.9/2.7.18/3.4.5)
+- Usa `page.data.lang` para textos descritivos
+- Code snippets em inglês (padrão para código)
+- Tabs Spring Boot / Go
+
+---
+
 ## Variáveis de Ambiente
 
 | Var | Descrição | Default |
@@ -72,8 +119,9 @@ O frontend autentica contra o AAD fake do kvemu via OAuth2 `client_credentials`:
 | `KEYVAULT_EMULATOR_URL` | URL base do kvemu | `https://localhost:13000` |
 | `KEYVAULT_TENANT_ID` | Tenant ID p/ OAuth2 | `a0c2a3f5-e1b3-4d6a-9c41-2cdd1f2c7e0f` |
 | `KEYVAULT_TITLE` | Título no header | `One Keyvault` |
-| `KEYVAULT_BASE_DOMAIN` | Domínio base para subdomínios (v1.1) | `kvemu.local` |
-| `KEYVAULT_DEFAULT_VAULT` | Nome do vault padrão (v1.1) | `vault` |
+| `KEYVAULT_BASE_DOMAIN` | Domínio base p/ multi-vault | `kvemu.local` |
+| `KEYVAULT_DEFAULT_VAULT` | Nome do vault padrão | `vault` |
+| `KV_CA_FILE` | Caminho do CA p/ download | `/certs/ca.pem` |
 | `PORT` | Porta do servidor SvelteKit | `3000` |
 | `ORIGIN` | Origin header (CSRF) | `http://localhost:3000` |
 
@@ -111,22 +159,9 @@ O frontend autentica contra o AAD fake do kvemu via OAuth2 `client_credentials`:
 ### VaultItem (item de lista)
 ```typescript
 {
-  id: string;              // "https://host/secrets/name/version"
-  attributes?: {
-    enabled?: boolean;
-    created?: number;      // epoch seconds
-    updated?: number;
-    expires?: number | null;
-  };
+  id: string;
+  attributes?: { enabled?: boolean; created?: number; updated?: number; expires?: number | null };
   tags?: Record<string, string>;
-}
-```
-
-### VaultItemList
-```typescript
-{
-  value: VaultItem[];
-  nextLink?: string | null;
 }
 ```
 
@@ -138,7 +173,7 @@ extends VaultItem {
 }
 ```
 
-O nome do item é extraído do penúltimo segmento do `id` (ex: `https://host/secrets/my-secret/abc123` → `my-secret`). O último segmento é sempre o version GUID.
+O nome do item é extraído do penúltimo segmento do `id` (ex: `https://host/secrets/my-secret/abc123` → `my-secret`).
 
 ---
 
@@ -147,20 +182,47 @@ O nome do item é extraído do penúltimo segmento do `id` (ex: `https://host/se
 | Rota | Descrição |
 |------|-----------|
 | `/` | Redirect 302 → `/secrets` |
-| `/secrets` | Lista secrets + form de criação inline + delete inline |
-| `/secrets/[name]` | Detalhe do secret + delete |
+| `/secrets` | Lista secrets + form inline create/delete |
+| `/secrets/[name]` | Detalhe: reveal value, metadata, danger zone |
 | `/keys` | Lista keys (read-only) |
 | `/certificates` | Lista certificates (read-only) |
-| `/vaults` | Gestão de vaults: criar, listar, deletar, exportar, importar (v1.1) |
-| `/vaults/import` | Upload de JSON para importar vault (v1.1) |
-| `/vaults/[name]/export` | Download do vault como JSON (v1.1) |
-| `/api/select-vault` | POST — seta cookie `selected_vault` e redireciona (v1.1) |
+| `/vaults` | Gestão de vaults: criar, listar, deletar, exportar; Setup Guide após criação |
+| `/vaults/import` | Upload JSON p/ importar vault com preview |
+| `/vaults/[name]/export` | Download do vault como JSON |
+| `/integrations` | Guia completo de integração Spring Boot + Go |
+| `/ca` | Download do certificado CA (GET → PEM file) |
+| `/api/select-vault` | POST — seta cookie `selected_vault` e redireciona |
 
-O layout (`+layout.svelte`) renderiza:
-- Header azul escuro com `Key Vault Emulator — {KEYVAULT_TITLE}` + badge "local"
-- **Vault selector dropdown** — seleciona vault ativo, persiste em cookie `selected_vault` (v1.1)
-- Link "Manage Vaults" → `/vaults` (v1.1)
-- Sidebar com links: Secrets, Keys, Certificates (highlight no ativo via `$app/state`)
+### Layout (`+layout.svelte`)
+
+- **Tema:** Dark "Secure Console" (fundo #09090b, accent teal #2dd4bf)
+- **Sidebar:** Logo kvemu, nav items i18n (Objects, Secrets, Keys, Certificates, Integrations), footer "Manage Vaults"
+- **Top bar:** Badge "local", vault selector dropdown, language switcher (EN/PT/ES)
+- **Vault selector:** `<select>` com `value={data.selectedVault}` + `onchange` que submete form nativo para `/api/select-vault`
+- **Redirect-back:** `/api/select-vault` lê campo `from` do form e redireciona para a página atual (não sempre `/secrets`)
+
+---
+
+## Estilo Visual
+
+Dark "Secure Console" theme com CSS custom properties em `app.css`:
+
+| Token | Valor |
+|-------|-------|
+| `--bg-root` | `#09090b` |
+| `--bg-surface` | `#111115` |
+| `--bg-elevated` | `#18181e` |
+| `--bg-input` | `#0e0e12` |
+| `--border-default` | `#22222a` |
+| `--text-primary` | `#e8e8ed` |
+| `--text-secondary` | `#9a9aa8` |
+| `--text-muted` | `#60607a` |
+| `--accent` | `#2dd4bf` (teal) |
+| `--success` | `#4ade80` |
+| `--danger` | `#f87171` |
+| `--warning` | `#fbbf24` |
+
+Componentes CSS: `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-danger`, `.btn-sm`, `.input`, `.badge`, `.card`, `.card-header`, `.card-body`, `.stat-card`, `.table-container`, `.nav-item`, `.nav-icon`, `.empty-state`, `.page-header`, `.page-title`, `.page-subtitle`, `.form-msg`, `.separator`, `.link`
 
 ---
 
@@ -174,21 +236,13 @@ Multi-stage build:
 
 ### docker-compose.yml
 Dois serviços:
-- **kvemu**: build do `../backend` (deploy/Dockerfile), porta 13000, TLS auto, volumes p/ data + certs, healthcheck em `/healthz`
-- **kv-interface**: build local, porta 3000, depende de `kvemu` healthy, `KEYVAULT_EMULATOR_URL=https://kvemu:13000`
+- **kvemu**: build do `../backend`, porta 13000, TLS auto, volumes p/ data + certs, healthcheck `/healthz`
+- **kv-interface**: build local, porta 3000, depende de `kvemu` healthy, mount `kvemu-certs:/certs:ro` p/ CA download
 
----
-
-## Estilo Visual
-
-Tema inspirado no Azure Portal, definido via CSS custom properties no `app.css`:
-- `--mc-blue`: `#0078d4` (links, botões primários)
-- `--mc-bg`: `#f5f5f5` (fundo)
-- `--mc-surface`: `#ffffff` (cards, tabelas)
-- `--mc-border`: `#e1e1e1`
-- `--mc-text`: `#1b1b1b`
-- `--mc-text-muted`: `#605e5c`
-- Font stack: Segoe UI, system-ui, sans-serif
+### docker-compose (lab-dilson)
+- Usa imagens pré-buildadas (`kv-server-kvemu`, `kv-server-kv-interface`)
+- `kvemu-init` service com alpine `chown 65532:65532` p/ corrigir permissões de volume
+- Network aliases: `kvemu.local`, `vault.kvemu.local`, `login.microsoftonline.com`, `lab-dilson`
 
 ---
 
@@ -196,9 +250,17 @@ Tema inspirado no Azure Portal, definido via CSS custom properties no `app.css`:
 
 ```bash
 npm run dev          # Dev server (Vite)
-npm run build        # Build produção
+npm run build        # Build produção → build/
 npm run preview      # Preview do build
 npm run check        # Type-check (svelte-check)
+```
+
+Deploy lab-dilson:
+```bash
+npm run build
+tar czf /tmp/deploy.tar.gz build package.json
+scp /tmp/deploy.tar.gz lab-dilson:/home/dilson/containers/keyvault/kv-interface-build/
+ssh lab-dilson "cd ... && tar xzf deploy.tar.gz && docker build -t kv-server-kv-interface . && docker compose up -d kv-interface"
 ```
 
 ---
@@ -215,50 +277,40 @@ O frontend é um cliente data-plane puro do kvemu:
 
 ## Multi-Vault (v1.1)
 
-O frontend suporta múltiplos vaults via **vault selector** no header e **KeyVaultClient** class.
-
 ### Vault Selector
+- Dropdown no header com `value={data.selectedVault}` (do cookie)
+- Form nativo POST p/ `/api/select-vault` com campo `from` p/ redirect-back
+- Cookie `selected_vault` persiste seleção
 
-O layout carrega a lista de vaults do emulador e exibe um dropdown no header. A seleção é persistida via cookie `selected_vault`.
-
-### API Client (`keyvault.ts`)
-
-`KeyVaultClient` substitui o antigo singleton `keyvault`. Cada instância é vinculada a um vault name e constrói a URL correta:
-
-```typescript
-const client = getVaultClient("prod"); // https://prod.kvemu.local:13000
-const secrets = await client.listSecrets();
-```
-
-Para o vault default, usar `getVaultClient()` sem argumentos (usa `KEYVAULT_DEFAULT_VAULT`).
-
-### Token compartilhado
-
-O token OAuth2 é cacheado globalmente e compartilhado entre todos os vaults (mesmo tenant, mesma chave JWT). O `audience` no JWT é por vault, mas o frontend obtém token contra o host base.
+### KeyVaultClient (`lib/server/keyvault.ts`)
+- Singleton `getVaultClient(vaultName?)` — sem argumentos usa `KEYVAULT_DEFAULT_VAULT`
+- `vaultUrl` constrói `https://{name}.{baseDomain}:{port}`
+- `mgmtRequest()` usa `emulatorUrl()` diretamente (sem vault prefix)
+- Token OAuth2 cacheado globalmente, compartilhado entre vaults
 
 ### Management API (sem AAD auth)
-
 | Método | Path | Uso |
 |--------|------|-----|
 | GET | `/vaults` | `listVaults()` |
-| POST | `/vaults` | `createVault(name, displayName)` |
+| POST | `/vaults` | `createVault(name, displayName, tenantId)` |
 | GET | `/vaults/{name}` | `getVault(name)` |
 | DELETE | `/vaults/{name}` | `deleteVault(name)` |
 | GET | `/vaults/{name}/export` | `exportVault(name)` |
 | POST | `/vaults/import` | `importVault(data)` |
 
 ### Hooks
+`hooks.server.ts`:
+- `event.cookies.get('selected_vault')` → `event.locals.selectedVault`
+- `event.cookies.get('lang')` → `event.locals.lang`
 
-`hooks.server.ts` lê o cookie `selected_vault` e injeta em `event.locals.selectedVault`. As páginas o usam para instanciar o `KeyVaultClient` correto.
-
-### Novos arquivos
-
+### Arquivos novos (v1.1 + features posteriores)
 | Arquivo | Descrição |
 |---------|-----------|
-| `src/hooks.server.ts` | Hook que gerencia cookie `selected_vault` |
-| `src/routes/vaults/+page.server.ts` | Load + ações create/delete |
-| `src/routes/vaults/+page.svelte` | UI de gestão de vaults |
-| `src/routes/vaults/[name]/export/+server.ts` | Proxy de download do export |
-| `src/routes/vaults/import/+page.server.ts` | Ação de import |
-| `src/routes/vaults/import/+page.svelte` | UI de upload + preview |
-| `src/routes/api/select-vault/+server.ts` | Endpoint para trocar vault selecionado |
+| `src/hooks.server.ts` | Hook: selectedVault + lang cookies → locals |
+| `src/lib/i18n.ts` | Dicionário en/pt/es + função `t()` |
+| `src/lib/IntegrationsGuide.svelte` | Guia de integração compartilhado |
+| `src/routes/vaults/+page.svelte` | Gestão de vaults + Setup Guide |
+| `src/routes/vaults/import/+page.svelte` | Upload JSON p/ importar vault |
+| `src/routes/integrations/+page.svelte` | Página de guia de integração |
+| `src/routes/ca/+server.ts` | Endpoint download CA certificate |
+| `src/routes/api/select-vault/+server.ts` | Cookie selected_vault + redirect |
