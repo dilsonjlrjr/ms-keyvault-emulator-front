@@ -1,16 +1,6 @@
-import { error, fail } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { getVaultClient } from '$lib/server/keyvault';
-import type { Actions, PageServerLoad } from './$types';
-
-export const load: PageServerLoad = async ({ locals }) => {
-	try {
-		const client = getVaultClient(locals.selectedVault);
-		const secrets = await client.listSecrets();
-		return { secrets };
-	} catch (err) {
-		error(503, `Unable to connect to vault emulator: ${(err as Error).message}`);
-	}
-};
+import type { Actions } from './$types';
 
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
