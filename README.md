@@ -7,9 +7,9 @@
 <a id="english"></a>
 ## 🇺🇸 English
 
-Web dashboard for [**kvemu**](../backend), an Azure Key Vault emulator. Browse, create, and manage Secrets, Keys, and Certificates from your browser — across multiple vaults, switchable from the header.
+Web dashboard (SPA) for [**kvemu**](../backend), an Azure Key Vault emulator. Browse, create, and manage Secrets, Keys, and Certificates from your browser — across multiple vaults, switchable from the header.
 
-Talks to kvemu's dedicated `/ui` plane (vault in the path, no token), so vault isolation is deterministic and never depends on DNS/subdomains.
+**SPA mode** — all rendering is client-side. Data is fetched via AJAX to proxy endpoints (`/api/vault/{vault}/kv/...`, `/api/mgmt/...`) that forward to kvemu's `/ui` plane. Vault selection is stored in `localStorage`.
 
 **Stack:** SvelteKit 2 (Svelte 5 runes) · TypeScript 6 · Tailwind CSS 4 · Vite 8 · adapter-node · undici · Dark "Secure Console" theme · i18n (en/pt/es)
 
@@ -21,23 +21,26 @@ docker compose up --build
 
 Open **http://localhost:3000**.
 
-### Documentation
+### API Endpoints
 
-| Document | Description |
-|---|---|
-| [Getting Started](docs/getting-started.md) | Docker setup, local development, environment variables |
-| [Architecture](docs/architecture.md) | Project structure, API endpoints, auth flow, response types |
-| [UI & Theme](docs/ui-and-theme.md) | Routes, layout, design system, visual tokens, key features |
-| [Development](docs/development.md) | Build commands, Dockerfile, docker-compose |
+| URL | Description |
+|-----|-------------|
+| `GET /api/vault/{vault}/kv/secrets` | List secrets |
+| `GET /api/vault/{vault}/kv/secrets/{name}` | Get secret |
+| `GET /api/vault/{vault}/kv/keys` | List keys |
+| `GET /api/vault/{vault}/kv/certificates` | List certificates |
+| `GET /api/mgmt/vaults` | List vaults |
+| `POST /api/mgmt/vaults` | Create vault |
+| `DELETE /api/mgmt/vaults/{name}` | Delete vault |
 
 ---
 
 <a id="português"></a>
 ## 🇧🇷 Português
 
-Painel web para o [**kvemu**](../backend), um emulador do Azure Key Vault. Navegue, crie e gerencie Secrets, Keys e Certificates pelo navegador — em múltiplos vaults, alternáveis pelo header.
+Painel web (SPA) para o [**kvemu**](../backend), um emulador do Azure Key Vault. Navegue, crie e gerencie Secrets, Keys e Certificates pelo navegador — em múltiplos vaults, alternáveis pelo header.
 
-Fala com o plano `/ui` dedicado do kvemu (vault no path, sem token), então o isolamento por vault é determinístico e nunca depende de DNS/subdomínio.
+**Modo SPA** — toda renderização é client-side. Dados são buscados via AJAX para endpoints proxy (`/api/vault/{vault}/kv/...`, `/api/mgmt/...`) que encaminham ao plano `/ui` do kvemu. A seleção de vault fica em `localStorage`.
 
 **Stack:** SvelteKit 2 (Svelte 5 runes) · TypeScript 6 · Tailwind CSS 4 · Vite 8 · adapter-node · undici · tema Dark "Secure Console" · i18n (en/pt/es)
 
@@ -49,11 +52,14 @@ docker compose up --build
 
 Acesse **http://localhost:3000**.
 
-### Documentação
+### Endpoints da API
 
-| Documento | Descrição |
-|---|---|
-| [Primeiros Passos](docs/getting-started.md) | Setup Docker, desenvolvimento local, variáveis de ambiente |
-| [Arquitetura](docs/architecture.md) | Estrutura do projeto, endpoints da API, fluxo de autenticação, tipos de resposta |
-| [UI & Tema](docs/ui-and-theme.md) | Rotas, layout, design system, tokens visuais, funcionalidades |
-| [Desenvolvimento](docs/development.md) | Comandos de build, Dockerfile, docker-compose |
+| URL | Descrição |
+|-----|-----------|
+| `GET /api/vault/{vault}/kv/secrets` | Lista secrets |
+| `GET /api/vault/{vault}/kv/secrets/{name}` | Obtém secret |
+| `GET /api/vault/{vault}/kv/keys` | Lista keys |
+| `GET /api/vault/{vault}/kv/certificates` | Lista certificates |
+| `GET /api/mgmt/vaults` | Lista vaults |
+| `POST /api/mgmt/vaults` | Cria vault |
+| `DELETE /api/mgmt/vaults/{name}` | Deleta vault |
