@@ -1,15 +1,10 @@
-import { error, fail } from '@sveltejs/kit';
-import { keyvault } from '$lib/server/keyvault';
-import type { Actions, PageServerLoad } from './$types';
+import { fail } from '@sveltejs/kit';
+import { getVaultClient } from '$lib/server/keyvault';
+import type { Actions } from './$types';
 
-export const load: PageServerLoad = async () => {
-	try {
-		const secrets = await keyvault.listSecrets();
-		return { secrets };
-	} catch (err) {
-		error(503, `Não foi possível conectar ao emulador do Key Vault: ${(err as Error).message}`);
-	}
-};
+function vaultFrom(form: FormData): string {
+	return String(form.get('vault') ?? '').trim() || 'vault';
+}
 
 export const actions: Actions = {
 	create: async ({ request }) => {
@@ -18,19 +13,21 @@ export const actions: Actions = {
 		const value = String(form.get('value') ?? '');
 
 		if (!name || !value) {
-			return fail(400, { error: 'Informe nome e valor do secret.' });
+			return fail(400, { error: 'Name and value are required.' });
 		}
 
-		await keyvault.setSecret(name, value);
+		const client = getVaultClient(vaultFrom(form));
+		await client.setSecret(name, value);
 		return { success: true };
 	},
 
 	delete: async ({ request }) => {
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '');
-		if (!name) return fail(400, { error: 'Nome do secret ausente.' });
+		if (!name) return fail(400, { error: 'Secret name is missing.' });
 
-		await keyvault.deleteSecret(name);
+		const client = getVaultClient(vaultFrom(form));
+		await client.deleteSecret(name);
 		return { success: true };
 	}
 };

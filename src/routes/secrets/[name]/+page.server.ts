@@ -1,20 +1,16 @@
-import { error, fail, redirect } from '@sveltejs/kit';
-import { keyvault } from '$lib/server/keyvault';
-import type { Actions, PageServerLoad } from './$types';
-
-export const load: PageServerLoad = async ({ params }) => {
-	try {
-		const secret = await keyvault.getSecret(params.name);
-		return { secret };
-	} catch {
-		error(404, 'Secret não encontrado no emulador.');
-	}
-};
+import { fail, redirect } from '@sveltejs/kit';
+import { getVaultClient } from '$lib/server/keyvault';
+import type { Actions } from './$types';
 
 export const actions: Actions = {
-	delete: async ({ params }) => {
+	delete: async ({ request }) => {
+		const form = await request.formData();
+		const name = String(form.get('name') ?? '');
+		const vault = String(form.get('vault') ?? '').trim() || 'vault';
+		if (!name) return fail(400, { error: 'Secret name is missing.' });
 		try {
-			await keyvault.deleteSecret(params.name);
+			const client = getVaultClient(vault);
+			await client.deleteSecret(name);
 		} catch (err) {
 			return fail(500, { error: (err as Error).message });
 		}

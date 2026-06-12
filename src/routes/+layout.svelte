@@ -1,19 +1,61 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { page } from '$app/state';
+	import { page, navigating } from '$app/state';
+	import { invalidateAll } from '$app/navigation';
+	import { fade } from 'svelte/transition';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
+	import { t, type Lang } from '$lib/i18n';
+	import { APP_VERSION } from '$lib/version';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
-	const headerTitle = $derived(`Key Vault Emulator - ${data.vaultTitle}`);
+	const _ = (key: string) => t(key, page.data.lang as string || 'en');
+
+	let switchingVault = $state(false);
+	let vaultChangeError = $state<string | null>(null);
+
+	const isBusy = $derived(!!navigating.to || switchingVault);
+
+	async function onVaultChange(e: Event) {
+		const vault = (e.currentTarget as HTMLSelectElement).value;
+		vaultChangeError = null;
+		switchingVault = true;
+		try {
+			localStorage.setItem('selected_vault', vault);
+			await invalidateAll();
+		} finally {
+			switchingVault = false;
+		}
+	}
+
+	const headerTitle = $derived(`${_('bar.title')} — ${data.vaultTitle}`);
 
 	const nav = [
-		{ href: '/secrets', label: 'Secrets' },
-		{ href: '/keys', label: 'Keys' },
-		{ href: '/certificates', label: 'Certificates' }
+		{ href: '/secrets', label: 'nav.secrets', icon: 'key' },
+		{ href: '/keys', label: 'nav.keys', icon: 'shield' },
+		{ href: '/certificates', label: 'nav.certificates', icon: 'badge' },
+		{ href: '/integrations', label: 'nav.integrations', icon: 'plug' }
+	] as const;
+
+	const iconPaths: Record<string, string> = {
+		key: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z',
+		shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+		badge: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+		plug: 'M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z'
+	};
+
+	const langOptions: { code: Lang; label: string; flag: string }[] = [
+		{ code: 'en', label: 'EN', flag: '🇺🇸' },
+		{ code: 'pt', label: 'PT', flag: '🇧🇷' },
+		{ code: 'es', label: 'ES', flag: '🇪🇸' }
 	];
+
+	async function changeLang(l: Lang) {
+		localStorage.setItem('lang', l);
+		window.location.reload();
+	}
 </script>
 
 <svelte:head>
@@ -21,47 +63,152 @@
 	<title>{headerTitle}</title>
 </svelte:head>
 
-<div class="flex min-h-screen flex-col">
-	<header
-		class="flex h-12 items-center gap-3 px-4 text-white"
-		style="background: var(--mc-blue-dark);"
+<div class="flex h-screen overflow-hidden" style="background: var(--bg-root);">
+	<!-- Sidebar -->
+	<aside
+		class="flex w-[--sidebar-w] shrink-0 flex-col border-r"
+		style="background: var(--bg-surface); border-color: var(--border-subtle);"
 	>
-		<span class="text-lg">🔑</span>
-		<span class="font-semibold">Key Vault Emulator</span>
-		<span class="text-white/60">-</span>
-		<span class="font-medium">{data.vaultTitle}</span>
-		<span class="ml-1 rounded bg-white/15 px-2 py-0.5 text-xs">local</span>
-	</header>
+		<!-- Logo / brand -->
+		<div class="flex items-center gap-2.5 border-b px-4 py-3.5" style="border-color: var(--border-subtle);">
+			<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md" style="background: var(--accent-subtle);">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+				</svg>
+			</div>
+			<div class="min-w-0">
+				<p class="truncate text-sm font-semibold" style="color: var(--text-primary);">kvemu</p>
+			</div>
+		</div>
 
-	<div class="flex flex-1">
-		<nav
-			class="w-56 shrink-0 border-r p-3"
-			style="background: var(--mc-surface); border-color: var(--mc-border);"
-		>
-			<p class="px-2 pb-2 text-xs font-semibold tracking-wide uppercase" style="color: var(--mc-text-muted);">
-				Objects
+		<!-- Navigation -->
+		<nav class="flex-1 space-y-0.5 overflow-y-auto p-3">
+			<p class="px-2 pb-2 pt-1 text-[0.625rem] font-semibold uppercase tracking-wider" style="color: var(--text-muted);">
+				{_('nav.objects')}
 			</p>
-			<ul class="space-y-0.5">
-				{#each nav as item (item.href)}
-					{@const active = page.url.pathname.startsWith(item.href)}
-					<li>
-						<a
-							href={item.href}
-							class="block rounded px-2 py-1.5 text-sm transition-colors"
-							class:font-semibold={active}
-							style={active
-								? 'background: #e8f1fb; color: var(--mc-blue);'
-								: 'color: var(--mc-text);'}
-						>
-							{item.label}
-						</a>
-					</li>
-				{/each}
-			</ul>
+			{#each nav as item (item.href)}
+				{@const active = page.url.pathname === item.href || page.url.pathname.startsWith(item.href + '/')}
+				<a
+					href={item.href}
+					class="nav-item"
+					class:active
+				>
+					<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d={iconPaths[item.icon]} />
+					</svg>
+					{_(item.label)}
+				</a>
+			{/each}
 		</nav>
 
-		<main class="flex-1 p-6">
-			{@render children()}
+		<!-- Footer -->
+		<div class="border-t p-3" style="border-color: var(--border-subtle);">
+			<a href="/vaults" class="nav-item text-[0.75rem]">
+				<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+					<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+				</svg>
+				{_('nav.manage_vaults')}
+			</a>
+			<p class="mt-2 text-[0.625rem] font-semibold uppercase tracking-wider" style="color: var(--text-muted);">v{APP_VERSION}</p>
+		</div>
+	</aside>
+
+	<!-- Main area -->
+	<div class="flex flex-1 flex-col overflow-hidden">
+		<!-- Top bar -->
+		<header
+			class="flex h-11 shrink-0 items-center gap-3 border-b px-4"
+			style="background: var(--bg-surface); border-color: var(--border-subtle);"
+		>
+			<span class="rounded-full px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wider" style="background: var(--success-subtle); color: var(--success);">
+				{_('bar.local')}
+			</span>
+
+			<div class="ml-auto flex items-center gap-2">
+				{#if data.vaults.length > 0}
+					<select
+						name="vault"
+						value={data.selectedVault}
+						disabled={isBusy}
+						class="input py-1 pr-6 text-xs"
+						style="width: auto;"
+						onchange={onVaultChange}
+					>
+						{#each data.vaults as vault (vault.name)}
+							<option value={vault.name}>
+								{vault.displayName || vault.name}
+							</option>
+						{/each}
+					</select>
+				{/if}
+
+				<div class="flex items-center rounded-lg border p-0.5" style="border-color: var(--border-default);">
+					{#each langOptions as opt}
+						<button
+							class="rounded px-1.5 py-0.5 text-[0.625rem] font-semibold transition-all"
+							class:btn-primary={data.lang === opt.code}
+							class:btn-ghost={data.lang !== opt.code}
+							style={data.lang === opt.code ? 'padding: 0.125rem 0.375rem; font-size: 0.625rem;' : 'border: none; padding: 0.125rem 0.375rem; font-size: 0.625rem;'}
+							onclick={() => changeLang(opt.code)}
+						>
+							{opt.label}
+						</button>
+					{/each}
+				</div>
+			</div>
+		</header>
+
+		{#if vaultChangeError}
+			<div class="flex items-center gap-1.5 px-4 py-1.5 text-xs" style="background: var(--danger-subtle, #3b1111); color: var(--danger);" transition:fade={{ duration: 120 }}>
+				<span>{vaultChangeError}</span>
+				<button
+					class="ml-auto text-xs opacity-60 hover:opacity-100"
+					onclick={() => (vaultChangeError = null)}
+				>
+					&#x2715;
+				</button>
+			</div>
+		{/if}
+
+		<!-- Indeterminate progress bar (navegação / troca de vault) -->
+		{#if isBusy}
+			<div class="route-progress" transition:fade={{ duration: 120 }} aria-hidden="true">
+				<div class="route-progress-bar"></div>
+			</div>
+		{/if}
+
+		<!-- Content. A key composta força remontagem quando muda de rota OU de vault,
+		garantindo que empty-states e dados reflitam o vault selecionado. -->
+		<main class="relative flex-1 overflow-y-auto p-6">
+			{#key `${page.url.pathname}|${data.selectedVault}`}
+				<div in:fade={{ duration: 150 }} style={isBusy ? 'opacity: 0.55; transition: opacity 120ms ease;' : 'transition: opacity 120ms ease;'}>
+					{@render children()}
+				</div>
+			{/key}
 		</main>
 	</div>
 </div>
+
+<style>
+	.route-progress {
+		position: relative;
+		height: 2px;
+		width: 100%;
+		overflow: hidden;
+		background: var(--border-subtle);
+	}
+	.route-progress-bar {
+		position: absolute;
+		inset: 0;
+		width: 40%;
+		background: var(--accent);
+		border-radius: 9999px;
+		animation: route-progress-slide 1s ease-in-out infinite;
+	}
+	@keyframes route-progress-slide {
+		0% { left: -40%; }
+		50% { left: 40%; }
+		100% { left: 100%; }
+	}
+</style>

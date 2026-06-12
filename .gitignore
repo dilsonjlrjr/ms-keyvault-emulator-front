@@ -6,3 +6,4 @@ certs/
 .env
 .env.local
 .svelte-kit/
+CONTEXT.md
