@@ -16,9 +16,15 @@ export const actions: Actions = {
 			return fail(400, { error: 'Name and value are required.' });
 		}
 
-		const client = getVaultClient(vaultFrom(form));
-		await client.setSecret(name, value);
-		return { success: true };
+		try {
+			const client = getVaultClient(vaultFrom(form));
+			await client.setSecret(name, value);
+			return { success: true };
+		} catch (err) {
+			const msg = (err as Error).message || 'Unknown error';
+			if (msg.includes('409')) return fail(409, { error: 'Secret exists but is soft-deleted. Purge it first or use a different name.' });
+			return fail(500, { error: msg });
+		}
 	},
 
 	delete: async ({ request }) => {
@@ -26,8 +32,12 @@ export const actions: Actions = {
 		const name = String(form.get('name') ?? '');
 		if (!name) return fail(400, { error: 'Secret name is missing.' });
 
-		const client = getVaultClient(vaultFrom(form));
-		await client.deleteSecret(name);
-		return { success: true };
+		try {
+			const client = getVaultClient(vaultFrom(form));
+			await client.deleteSecret(name);
+			return { success: true };
+		} catch (err) {
+			return fail(500, { error: (err as Error).message || 'Delete failed' });
+		}
 	}
 };
